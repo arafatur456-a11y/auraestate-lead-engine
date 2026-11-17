@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Listings from "@/components/Listings";
 import PropertyModal from "@/components/PropertyModal";
+import MortgageCalculator from "@/components/MortgageCalculator";
+import SellerValuation from "@/components/SellerValuation";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import AIChatbot from "@/components/AIChatbot";
 import CRMDashboard from "@/components/CRMDashboard";
@@ -31,6 +33,8 @@ export default function HomePage() {
           onSearch={() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" })}
         />
         <Listings properties={results} filtered={isFiltered(filters)} onReset={() => setFilters(DEFAULT_FILTERS)} onView={setSelected} />
+        <MortgageCalculator />
+        <SellerValuation />
         <WhyChooseUs />
       </main>
       <Footer />

@@ -2,11 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-export type LeadStatus = "New Lead" | "Qualified" | "Tour Requested" | "Contacted" | "Closed";
+export type LeadStatus = "New Lead" | "New Seller Lead" | "Qualified" | "Tour Requested" | "Contacted" | "Closed";
 export type LeadIntent = "Buy" | "Sell" | "Tour" | "Inquiry";
-export type LeadSource = "AI Chatbot" | "Property Inquiry" | "Tour Request";
+export type LeadSource = "AI Chatbot" | "Property Inquiry" | "Tour Request" | "Home Valuation";
 
-export const LEAD_STATUSES: LeadStatus[] = ["New Lead", "Qualified", "Tour Requested", "Contacted", "Closed"];
+export const LEAD_STATUSES: LeadStatus[] = ["New Lead", "New Seller Lead", "Qualified", "Tour Requested", "Contacted", "Closed"];
 
 export interface Lead {
   id: string;
@@ -22,6 +22,8 @@ export interface Lead {
   status: LeadStatus;
   property?: string;
   message?: string;
+  /** Estimated property value (seller leads) — used for pipeline value. */
+  value?: number;
   score: number; // 0–100
 }
 
@@ -31,6 +33,7 @@ interface CRMContextValue {
   leads: Lead[];
   addLead: (lead: NewLead) => Lead;
   updateStatus: (id: string, status: LeadStatus) => void;
+  updateLead: (id: string, patch: Partial<Omit<Lead, "id" | "createdAt">>) => void;
   resetDemo: () => void;
   crmOpen: boolean;
   setCrmOpen: (open: boolean) => void;
@@ -50,15 +53,17 @@ const STORAGE_KEY = "auraestate.crm.leads.v1";
 
 const minsAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 
-export function scoreLead(l: Pick<Lead, "timeline" | "budget" | "intent" | "phone">): number {
+export function scoreLead(l: Pick<Lead, "timeline" | "budget" | "intent" | "phone" | "email"> & { value?: number }): number {
   let s = 40;
+  if (l.value && l.value >= 1_000_000) s += 10;
+  if (l.email && l.email.includes("@")) s += 5;
   if (/ASAP|30 days|Immediately/i.test(l.timeline)) s += 30;
   else if (/1.?–.?3|1-3/i.test(l.timeline)) s += 20;
   else if (/3.?–.?6|3-6/i.test(l.timeline)) s += 10;
   if (/\$10M\+|\$5M/i.test(l.budget)) s += 15;
   else if (/\$2M/i.test(l.budget)) s += 8;
   if (l.intent === "Tour") s += 10;
-  if (l.phone) s += 5;
+  if (l.phone && /\d/.test(l.phone)) s += 5;
   return Math.min(99, s);
 }
 
@@ -140,6 +145,16 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
   }, []);
 
+  const updateLead = useCallback((id: string, patch: Partial<Omit<Lead, "id" | "createdAt">>) => {
+    setLeads((prev) =>
+      prev.map((l) => {
+        if (l.id !== id) return l;
+        const next = { ...l, ...patch };
+        return { ...next, score: patch.score ?? scoreLead(next) };
+      }),
+    );
+  }, []);
+
   const resetDemo = useCallback(() => {
     setLeads(SEED_LEADS.map((l, i) => ({ ...l, createdAt: minsAgo([18, 64, 185, 540, 1560][i] ?? 60) })));
     setUnseen(0);
@@ -160,14 +175,14 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<CRMContextValue>(
     () => ({
-      leads, addLead, updateStatus, resetDemo,
+      leads, addLead, updateStatus, updateLead, resetDemo,
       crmOpen, setCrmOpen,
       chatOpen, setChatOpen,
       chatPreset, openChatWith, clearChatPreset: () => setChatPreset(null),
       lastLead, dismissLastLead: () => setLastLead(null),
       unseen,
     }),
-    [leads, addLead, updateStatus, resetDemo, crmOpen, setCrmOpen, chatOpen, chatPreset, openChatWith, lastLead, unseen],
+    [leads, addLead, updateStatus, updateLead, resetDemo, crmOpen, setCrmOpen, chatOpen, chatPreset, openChatWith, lastLead, unseen],
   );
 
   return <CRMContext.Provider value={value}>{children}</CRMContext.Provider>;

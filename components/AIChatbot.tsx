@@ -215,7 +215,7 @@ export default function AIChatbot() {
       if (nextStep === "done") {
         const intent = next.intent ?? "Buy";
         const hot = /ASAP|1–3/.test(next.timeline ?? "");
-        const status: LeadStatus = intent === "Tour" ? "Tour Requested" : hot ? "Qualified" : "New Lead";
+        const status: LeadStatus = intent === "Tour" ? "Tour Requested" : hot ? "Qualified" : intent === "Sell" ? "New Seller Lead" : "New Lead";
         setStep("done");
         botSay(["Thank you! Agent Alex will send exclusive off-market listings to your phone shortly. 🏠✨"], () => {
           addLead({

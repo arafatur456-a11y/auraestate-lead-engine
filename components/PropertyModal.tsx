@@ -216,7 +216,7 @@ export default function PropertyModal({ property, onClose }: { property: Propert
                   <input required className={inputCls} placeholder="Full name" autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                     <input required type="email" className={inputCls} placeholder="Email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                    <input required type="tel" pattern="[0-9+()\-\s]{7,}" className={inputCls} placeholder="Phone" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                    <input required type="tel" pattern="[\d\s\+\(\)\-]{7,}" className={inputCls} placeholder="Phone" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                   </div>
                   <textarea rows={3} className={clsx(inputCls, "resize-none")} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
                   <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-200">

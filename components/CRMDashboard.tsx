@@ -11,6 +11,7 @@ import { LEAD_STATUSES, useCRM, type Lead, type LeadStatus } from "@/context/CRM
 
 const STATUS_STYLES: Record<LeadStatus, { badge: string; dot: string }> = {
   "New Lead": { badge: "bg-sky-50 text-sky-700 ring-sky-200", dot: "bg-sky-500" },
+  "New Seller Lead": { badge: "bg-orange-50 text-orange-700 ring-orange-200", dot: "bg-orange-500" },
   Qualified: { badge: "bg-emerald-50 text-emerald-700 ring-emerald-200", dot: "bg-emerald-500" },
   "Tour Requested": { badge: "bg-violet-50 text-violet-700 ring-violet-200", dot: "bg-violet-500" },
   Contacted: { badge: "bg-amber-50 text-amber-700 ring-amber-200", dot: "bg-amber-500" },
@@ -38,7 +39,7 @@ const fmtStamp = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 const initials = (n: string) =>
-  n.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
+  n.split(/\s+/).filter((w) => /^[a-z]/i.test(w)).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 
 function StatusSelect({ lead }: { lead: Lead }) {
   const { updateStatus } = useCRM();
@@ -77,10 +78,10 @@ function Score({ value }: { value: number }) {
 }
 
 function exportCSV(rows: Lead[]) {
-  const header = ["Timestamp", "Name", "Email", "Phone", "Intent", "Budget", "Location", "Property", "Timeline", "Source", "Status", "Score"];
+  const header = ["Timestamp", "Name", "Email", "Phone", "Intent", "Budget / Value", "Location", "Property", "Timeline", "Source", "Status", "Score", "Notes"];
   const esc = (v: string | number | undefined) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const body = rows.map((l) =>
-    [l.createdAt, l.name, l.email, l.phone, l.intent, l.budget, l.location, l.property, l.timeline, l.source, l.status, l.score].map(esc).join(","),
+    [l.createdAt, l.name, l.email, l.phone, l.intent, l.budget, l.location, l.property, l.timeline, l.source, l.status, l.score, l.message].map(esc).join(","),
   );
   const blob = new Blob([[header.join(","), ...body].join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -122,11 +123,12 @@ export default function CRMDashboard() {
 
   const kpis = useMemo(() => {
     const day = leads.filter((l) => now - new Date(l.createdAt).getTime() < 86_400_000).length;
-    const pipeline = leads.filter((l) => l.status !== "Closed").reduce((s, l) => s + (BUDGET_MID[l.budget] ?? 2_000_000), 0);
+    const pipeline = leads.filter((l) => l.status !== "Closed").reduce((s, l) => s + (l.value ?? BUDGET_MID[l.budget] ?? 2_000_000), 0);
     const conv = leads.length ? Math.round(((counts.Qualified + counts["Tour Requested"] + counts.Closed) / leads.length) * 100) : 0;
+    const sellers = leads.filter((l) => l.intent === "Sell").length;
     return [
       { label: "Total leads", value: leads.length.toString(), sub: `+${day} in last 24h`, icon: Users, tone: "text-sky-600 bg-sky-50" },
-      { label: "Tours requested", value: counts["Tour Requested"].toString(), sub: "Ready to book", icon: CalendarCheck, tone: "text-violet-600 bg-violet-50" },
+      { label: "Tours requested", value: counts["Tour Requested"].toString(), sub: `${sellers} seller ${sellers === 1 ? "lead" : "leads"} in pipeline`, icon: CalendarCheck, tone: "text-violet-600 bg-violet-50" },
       { label: "Pipeline value", value: `$${(pipeline / 1_000_000).toFixed(1)}M`, sub: `≈ $${Math.round((pipeline * 0.025) / 1000)}K commission`, icon: TrendingUp, tone: "text-emerald-600 bg-emerald-50" },
       { label: "Qualification rate", value: `${conv}%`, sub: "Avg. response 38s", icon: Bot, tone: "text-amber-600 bg-amber-50" },
     ];
@@ -267,7 +269,7 @@ export default function CRMDashboard() {
                   <table className="w-full text-left text-sm">
                     <thead className="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                       <tr>
-                        {["Timestamp", "Lead Name", "Contact Info", "Buyer Budget", "Preferred Location", "Score", "Lead Status"].map((h) => (
+                        {["Timestamp", "Lead Name", "Contact Info", "Budget / Value", "Location", "Score", "Lead Status"].map((h) => (
                           <th key={h} className="whitespace-nowrap px-4 py-3 first:pl-5">
                             {h}
                           </th>
@@ -307,22 +309,30 @@ export default function CRMDashboard() {
                               </div>
                             </td>
                             <td className="px-4 py-3.5">
+                              {!l.email && !l.phone ? (
+                                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700">
+                                  Awaiting contact details
+                                </span>
+                              ) : (
+                              <>
                               <a href={`mailto:${l.email}`} className="flex items-center gap-1.5 whitespace-nowrap text-slate-700 hover:text-emerald-700">
                                 <Mail className="h-3.5 w-3.5 text-slate-400" /> {l.email}
                               </a>
                               <a href={`tel:${l.phone.replace(/[^\d+]/g, "")}`} className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-500 hover:text-emerald-700">
                                 <Phone className="h-3 w-3 text-slate-400" /> {l.phone}
                               </a>
+                              </>
+                              )}
                             </td>
                             <td className="whitespace-nowrap px-4 py-3.5">
                               <p className="font-semibold text-slate-900">{l.budget}</p>
                               <p className="text-xs text-slate-500">{l.timeline}</p>
                             </td>
                             <td className="px-4 py-3.5">
-                              <p className="flex items-center gap-1.5 whitespace-nowrap text-slate-700">
-                                <MapPin className="h-3.5 w-3.5 text-emerald-600" /> {l.location}
+                              <p className="flex max-w-[240px] items-center gap-1.5 text-slate-700" title={l.location}>
+                                <MapPin className="h-3.5 w-3.5 shrink-0 text-emerald-600" /> <span className="truncate">{l.location}</span>
                               </p>
-                              {l.property && <p className="mt-0.5 max-w-[200px] truncate text-xs text-slate-500">{l.property}</p>}
+                              {(l.property || l.message) && <p className="mt-0.5 max-w-[220px] truncate text-xs text-slate-500">{l.property ?? l.message}</p>}
                             </td>
                             <td className="px-4 py-3.5">
                               <Score value={l.score} />
@@ -353,7 +363,7 @@ export default function CRMDashboard() {
                             </p>
                             <span className="shrink-0 text-xs text-slate-400">{relTime(l.createdAt, now)}</span>
                           </div>
-                          <p className="truncate text-xs text-slate-500">{l.email} · {l.phone}</p>
+                          <p className="truncate text-xs text-slate-500">{l.email || l.phone ? `${l.email} · ${l.phone}` : "Awaiting contact details"}</p>
                           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
                             <span className="font-semibold text-slate-900">{l.budget}</span>
                             <span className="flex items-center gap-1">

@@ -9,6 +9,8 @@ import { AGENT } from "@/lib/data";
 
 const LINKS = [
   { href: "#listings", label: "Featured Listings" },
+  { href: "#mortgage", label: "Mortgage" },
+  { href: "#sell", label: "Sell Your Home" },
   { href: "#why-us", label: "Why Choose Us" },
 ];
 
@@ -58,19 +60,19 @@ export default function Navbar() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Logo />
 
-        <div className="hidden items-center gap-1 lg:flex">
+        <div className="hidden items-center gap-0.5 xl:flex">
           {LINKS.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="rounded-full px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
             >
               {l.label}
             </a>
           ))}
           <button
             onClick={() => setCrmOpen(true)}
-            className="relative ml-1 inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/20"
+            className="relative ml-1 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/20"
           >
             <KeyRound className="h-4 w-4" />
             Live Broker CRM
@@ -86,19 +88,19 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <a
             href={AGENT.phoneHref}
-            className="hidden items-center gap-2 text-sm font-medium text-white/80 transition hover:text-white xl:inline-flex"
+            className="hidden items-center gap-2 whitespace-nowrap text-sm font-medium text-white/80 transition hover:text-white 2xl:inline-flex"
           >
             <Phone className="h-4 w-4" /> {AGENT.phone}
           </a>
           <button
             onClick={() => openChatWith("Tour")}
-            className="hidden items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:-translate-y-0.5 hover:bg-emerald-400 sm:inline-flex"
+            className="hidden items-center gap-2 whitespace-nowrap rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:-translate-y-0.5 hover:bg-emerald-400 sm:inline-flex"
           >
             <CalendarCheck className="h-4 w-4" /> Schedule Tour
           </button>
           <button
             onClick={() => setMobileOpen((o) => !o)}
-            className="relative grid h-10 w-10 place-items-center rounded-full text-white hover:bg-white/10 lg:hidden"
+            className="relative grid h-10 w-10 place-items-center rounded-full text-white hover:bg-white/10 xl:hidden"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileOpen}
           >
@@ -114,7 +116,7 @@ export default function Navbar() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden lg:hidden"
+            className="overflow-hidden xl:hidden"
           >
             <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 pb-4 pt-3 sm:px-6">
               {LINKS.map((l) => (

@@ -26,7 +26,9 @@ npx vercel
 2. **Listing:** click **View Details** to see the gallery, specs, highlights and an instant inquiry form. Submitting it creates a lead (a "Tour Requested" lead if the tour box is ticked).
 3. **AI chatbot:** click the green bubble at the bottom right. Pick an intent (Buy, Sell or Book a Tour), then location, budget, timeline, name, email and phone. The lead is scored and pushed into the CRM.
 4. **CRM:** a toast appears ("New lead captured") and the navbar badge counts up. Open **🔑 Live Broker CRM Dashboard** to see the new lead highlighted at the top with KPIs, a pipeline strip, search, **Filter by Status**, inline status editing and a working **Export to CSV**.
-5. The **Reset** icon in the CRM restores the seed data. Leads are kept in `localStorage`, so the demo survives a page refresh.
+5. **Mortgage calculator:** drag the price, down payment and rate sliders or switch between 15 and 30 years. The monthly payment and its breakdown (principal & interest, taxes, insurance, plus PMI under 20% down) update live.
+6. **Seller valuation:** enter an address in "Sell Your Home" and click **Get Valuation**. An instant estimate appears and a **New Seller Lead** lands in the CRM. Filling in the optional report form adds the seller's name, email and phone to that lead.
+7. The **Reset** icon in the CRM restores the seed data. Leads are kept in `localStorage`, so the demo survives a page refresh.
 
 ## Structure
 
@@ -40,6 +42,8 @@ components/
   Hero.tsx            # full-bleed hero + interactive search bar
   Listings.tsx        # animated property grid + cards
   PropertyModal.tsx   # gallery, specs, inquiry form → CRM
+  MortgageCalculator.tsx # live monthly-payment estimator with breakdown donut
+  SellerValuation.tsx # instant AI home valuation lead magnet → CRM
   WhyChooseUs.tsx     # value props, testimonial, broker pitch CTA
   AIChatbot.tsx       # floating lead-qualification chatbot (state machine)
   CRMDashboard.tsx    # broker CRM: KPIs, filters, table/mobile cards, CSV export
@@ -49,6 +53,7 @@ components/
 context/CRMContext.tsx  # leads store, lead scoring, chat/CRM open state
 lib/data.ts             # listings, locations, agent details
 lib/filters.ts          # search filter logic
+lib/mortgage.ts         # payment math + tax/insurance/PMI rates
 ```
 
 ## Customising for a client

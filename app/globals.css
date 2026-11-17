@@ -60,6 +60,24 @@ input[type="range"].aura-range::-moz-range-thumb {
   cursor: pointer;
 }
 
+input[type="range"].aura-range-dark {
+  background: linear-gradient(to right, var(--color-emerald-400) var(--fill, 50%), rgb(255 255 255 / 0.12) var(--fill, 50%));
+}
+input[type="range"].aura-range-dark::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  border-color: var(--color-emerald-400);
+  box-shadow: 0 0 0 6px rgb(52 211 153 / 0.18);
+}
+input[type="range"].aura-range-dark::-moz-range-thumb {
+  border-color: var(--color-emerald-400);
+  box-shadow: 0 0 0 6px rgb(52 211 153 / 0.18);
+}
+input[type="range"].aura-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-emerald-300);
+  outline-offset: 2px;
+}
+
 .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-slate-300); border-radius: 999px; }
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
