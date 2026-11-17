@@ -7,7 +7,7 @@ import { useCRM } from "@/context/CRMContext";
 
 /** Broker-side notification that pops when a new lead lands — sells the "real-time CRM" story. */
 export default function LeadToast() {
-  const { lastLead, dismissLastLead, setCrmOpen, crmOpen, chatOpen, setChatOpen } = useCRM();
+  const { lastLead, dismissLastLead, setCrmOpen, crmOpen, chatOpen, setChatOpen, canOpenCRM } = useCRM();
 
   useEffect(() => {
     if (!lastLead) return;
@@ -17,7 +17,7 @@ export default function LeadToast() {
 
   return (
     <AnimatePresence>
-      {lastLead && !crmOpen && !chatOpen && (
+      {lastLead && canOpenCRM && !crmOpen && !chatOpen && (
         <motion.div
           key={lastLead.id}
           initial={{ opacity: 0, y: -20, scale: 0.95 }}

@@ -20,7 +20,7 @@ const fade = {
 };
 
 export default function WhyChooseUs() {
-  const { setCrmOpen, openChatWith } = useCRM();
+  const { setCrmOpen, openChatWith, demoMode } = useCRM();
 
   return (
     <>
@@ -80,7 +80,8 @@ export default function WhyChooseUs() {
         </div>
       </section>
 
-      {/* Broker pitch / CRM CTA */}
+      {/* Broker pitch / CRM CTA — a sales-demo section, so only shown in Demo Mode */}
+      {demoMode && (
       <section id="crm-demo" className="relative overflow-hidden bg-slate-950 py-20 sm:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(16,185,129,0.25),transparent_60%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
@@ -129,6 +130,7 @@ export default function WhyChooseUs() {
           </motion.dl>
         </div>
       </section>
+      )}
     </>
   );
 }

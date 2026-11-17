@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CalendarCheck, KeyRound, Menu, Phone, X } from "lucide-react";
 import clsx from "clsx";
 import { useCRM } from "@/context/CRMContext";
+import DemoToggle from "./DemoToggle";
 import { AGENT } from "@/lib/data";
 
 const LINKS = [
@@ -37,7 +38,8 @@ export function Logo({ light = true }: { light?: boolean }) {
 }
 
 export default function Navbar() {
-  const { setCrmOpen, openChatWith, unseen } = useCRM();
+  const { setCrmOpen, openChatWith, unseen, canOpenCRM, demoMode } = useCRM();
+  const badge = canOpenCRM ? unseen : 0; // visitors never see broker notifications
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -70,22 +72,25 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+          {canOpenCRM && (
           <button
             onClick={() => setCrmOpen(true)}
             className="relative ml-1 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/20"
           >
             <KeyRound className="h-4 w-4" />
-            Live Broker CRM
-            <span className="rounded-full bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">Demo</span>
-            {unseen > 0 && (
+            Broker CRM
+            <span className="rounded-full bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">{demoMode ? "Demo" : "Broker"}</span>
+            {badge > 0 && (
               <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white ring-2 ring-slate-950">
-                {unseen}
+                {badge}
               </span>
             )}
           </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
+          <DemoToggle className="hidden xl:inline-flex" />
           <a
             href={AGENT.phoneHref}
             className="hidden items-center gap-2 whitespace-nowrap text-sm font-medium text-white/80 transition hover:text-white 2xl:inline-flex"
@@ -105,7 +110,7 @@ export default function Navbar() {
             aria-expanded={mobileOpen}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            {unseen > 0 && !mobileOpen && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-slate-950" />}
+            {badge > 0 && !mobileOpen && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-slate-950" />}
           </button>
         </div>
       </nav>
@@ -129,6 +134,7 @@ export default function Navbar() {
                   {l.label}
                 </a>
               ))}
+              {canOpenCRM && (
               <button
                 onClick={() => {
                   setMobileOpen(false);
@@ -137,10 +143,12 @@ export default function Navbar() {
                 className="flex items-center justify-between rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-left text-base font-medium text-emerald-300"
               >
                 <span className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4" /> Live Broker CRM Dashboard
+                  <KeyRound className="h-4 w-4" /> Broker CRM Dashboard
                 </span>
-                <span className="text-xs uppercase tracking-wider">{unseen > 0 ? `${unseen} new` : "Demo"}</span>
+                <span className="text-xs uppercase tracking-wider">{badge > 0 ? `${badge} new` : demoMode ? "Demo" : "Broker"}</span>
               </button>
+              )}
+              <DemoToggle className="self-start px-4" />
               <button
                 onClick={() => {
                   setMobileOpen(false);

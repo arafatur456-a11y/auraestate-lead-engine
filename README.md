@@ -34,7 +34,24 @@ The chat widget is **Elena, Senior Client Advisor**. She answers questions about
 
 Code: `lib/concierge/` (`extract.ts` works out intent and details, `engine.ts` writes the built-in replies, `knowledge.ts` holds the listing data and the AI instructions, `score.ts` scores leads and maps them to the CRM) and `app/api/chat/route.ts`.
 
+## Demo Mode & broker access
+
+By default the site is in **production mode**. Visitors see a clean experience: no CRM button, lead scores, broker pop-ups or broker-pitch section, and Elena's confirmation card only says "Details sent to Alex".
+
+| | Production mode (default) | Demo Mode |
+|---|---|---|
+| Turn on | — | `?demo=true` in the URL, or the **Demo Mode** switch (visible only to a signed-in broker) |
+| Broker CRM | Needs the broker PIN (**Broker login** in the footer) | One click from the navbar, chat or valuation |
+| Lead score / "View in CRM" in chat | Hidden | Shown |
+| New-lead pop-ups and navbar badge | Signed-in broker only | Shown |
+
+- **Set `BROKER_PIN`** in Vercel (**Settings → Environment Variables**). The PIN is checked on the server and never sent to the browser. After a correct PIN, the browser stays signed in for 8 hours (httpOnly signed cookie), and there's a limit of 5 attempts per 5 minutes. In production, if no PIN is set, broker login is disabled.
+- Demo Mode is remembered in the browser; `?demo=false` turns it off. On a client's live site, set `NEXT_PUBLIC_ALLOW_DEMO_MODE=false` so Demo Mode can't be turned on at all. For a sales-demo deployment, `NEXT_PUBLIC_DEMO_MODE=true` starts every visit in Demo Mode.
+- **Important:** leads are still stored in each browser (`localStorage`), so the CRM only shows leads captured in that same browser. The PIN controls who can open the CRM screen; it doesn't protect stored data. Before using this with real clients, connect `addLead` to a database or a CRM such as Follow Up Boss or HubSpot.
+
 ## Demo script (for broker presentations)
+
+Open the site with `?demo=true` first.
 
 1. **Search:** set Location / Type / Max price / Bedrooms in the hero. The listings filter live.
 2. **Listing:** click **View Details** to see the gallery, specs, highlights and an instant inquiry form. Submitting it creates a lead (a "Tour Requested" lead if the tour box is ticked).

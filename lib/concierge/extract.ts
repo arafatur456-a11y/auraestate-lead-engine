@@ -264,7 +264,11 @@ export function extract(text: string, state: ConciergeState): Extraction {
   const phone = parsePhone(t.replace(EMAIL_RE, " "));
   if (phone) patch.phone = phone;
   // Treat a short proper-cased reply as a name if we asked for one recently and it isn't a place/property.
-  const askedForName = state.awaiting === "name" || ((state.asked.name ?? 0) > 0 && !state.profile.name && /^[A-Z][a-z'-]+(\s[A-Z][a-z'-]+){0,2}[.!]?$/.test(t));
+  const askedForName =
+    state.awaiting === "name" ||
+    (!state.profile.name && (state.asked.name ?? 0) > 0 && /^[A-Z][a-z'-]+(\s[A-Z][a-z'-]+){0,2}[.!]?$/.test(t)) ||
+    // An unprompted "First Last" message is almost always someone introducing themselves.
+    (!state.profile.name && /^[A-Z][a-z'-]+\s[A-Z][a-z'-]+(\s[A-Z][a-z'-]+)?[.!]?$/.test(t));
   const looksElse = LOC_ALIASES.some(([re]) => re.test(t)) || propertiesMentioned(t).length > 0;
   const name = parseName(t.replace(EMAIL_RE, " "), askedForName && !looksElse && !email && !phone);
   if (name) patch.name = name;

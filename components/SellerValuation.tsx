@@ -17,7 +17,7 @@ const inputCls =
   "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15";
 
 export default function SellerValuation() {
-  const { addLead, updateLead, setCrmOpen } = useCRM();
+  const { addLead, updateLead, setCrmOpen, demoMode } = useCRM();
   const [address, setAddress] = useState("");
   const [error, setError] = useState("");
   const [state, setState] = useState<State>({ phase: "idle" });
@@ -251,12 +251,14 @@ export default function SellerValuation() {
                       )}
                     </AnimatePresence>
 
+                    {demoMode && (
                     <button
                       onClick={() => setCrmOpen(true)}
                       className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/60 py-2.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50"
                     >
                       <KeyRound className="h-3.5 w-3.5" /> Broker demo: view this seller lead in the CRM
                     </button>
+                    )}
                     <p className="mt-3 text-center text-[10px] text-slate-400">Instant estimate for demonstration only — not an appraisal.</p>
                   </motion.div>
                 )}

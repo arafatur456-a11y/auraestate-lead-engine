@@ -13,6 +13,7 @@ import AIChatbot from "@/components/AIChatbot";
 import CRMDashboard from "@/components/CRMDashboard";
 import MobileFAB from "@/components/MobileFAB";
 import LeadToast from "@/components/LeadToast";
+import BrokerLogin from "@/components/BrokerLogin";
 import Footer from "@/components/Footer";
 import { PROPERTIES, type Property } from "@/lib/data";
 import { DEFAULT_FILTERS, applyFilters, isFiltered, type SearchFilters } from "@/lib/filters";
@@ -54,6 +55,7 @@ export default function HomePage() {
       <AIChatbot />
       <MobileFAB />
       <LeadToast />
+      <BrokerLogin />
     </CRMProvider>
   );
 }

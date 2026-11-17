@@ -79,7 +79,7 @@ function ElenaAvatar({ size = "sm" }: { size?: "sm" | "lg" }) {
 }
 
 export default function AIChatbot() {
-  const { addLead, updateLead, leads, chatOpen, setChatOpen, chatPreset, clearChatPreset, setCrmOpen } = useCRM();
+  const { addLead, updateLead, leads, chatOpen, setChatOpen, chatPreset, clearChatPreset, setCrmOpen, demoMode } = useCRM();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [typing, setTyping] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -401,7 +401,7 @@ export default function AIChatbot() {
                       </div>
                       <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                         {[
-                          ["Name", leadData.name],
+                          ["Name", leadSummary?.name ?? "—"],
                           ["Goal", leadData.intent],
                           [leadData.intent === "Sell" ? "Est. value" : "Budget", leadData.budget],
                           ["Timeline", leadData.timeline],
@@ -412,6 +412,13 @@ export default function AIChatbot() {
                           </div>
                         ))}
                       </dl>
+                      {!demoMode && (
+                        <p className="mt-3 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
+                          Alex usually replies within the hour. Your details are only shared with your agent.
+                        </p>
+                      )}
+                      {/* Broker-only: visible in Demo Mode (navbar switch or ?demo=true) */}
+                      {demoMode && (
                       <div className="mt-3 rounded-xl border border-dashed border-emerald-300 bg-emerald-50 p-3">
                         <p className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
                           Broker demo <span className="normal-case tracking-normal">Lead score {leadData.score}</span>
@@ -427,6 +434,7 @@ export default function AIChatbot() {
                           <KeyRound className="h-3.5 w-3.5" /> View lead in Broker CRM
                         </button>
                       </div>
+                      )}
                     </motion.div>
                   );
                 }

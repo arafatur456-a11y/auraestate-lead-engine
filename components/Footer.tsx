@@ -1,8 +1,13 @@
-import { Mail, MapPin, Phone } from "lucide-react";
+"use client";
+
+import { LockKeyhole, Mail, MapPin, Phone } from "lucide-react";
+import { useCRM } from "@/context/CRMContext";
+import DemoToggle from "./DemoToggle";
 import { Logo } from "./Navbar";
 import { AGENT, LOCATIONS } from "@/lib/data";
 
 export default function Footer() {
+  const { setCrmOpen, brokerAuthed, logout } = useCRM();
   return (
     <footer className="bg-slate-950 pb-28 pt-16 text-white/70 md:pb-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -42,7 +47,18 @@ export default function Footer() {
         </div>
         <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row sm:justify-between">
           <p>© {new Date().getFullYear()} AuraEstate Premier Properties. Demo template — all listings and data are fictional.</p>
-          <p>Equal Housing Opportunity · DRE #02134567</p>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            Equal Housing Opportunity · DRE #02134567
+            <button onClick={() => setCrmOpen(true)} className="inline-flex items-center gap-1 text-white/40 transition hover:text-white/80">
+              <LockKeyhole className="h-3 w-3" /> Broker login
+            </button>
+            {brokerAuthed && (
+              <button onClick={logout} className="text-white/40 transition hover:text-white/80">
+                Sign out
+              </button>
+            )}
+            <DemoToggle className="!px-0 !py-0 text-xs" />
+          </p>
         </div>
       </div>
     </footer>

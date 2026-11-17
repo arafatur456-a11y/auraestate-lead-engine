@@ -93,7 +93,7 @@ function exportCSV(rows: Lead[]) {
 }
 
 export default function CRMDashboard() {
-  const { leads, crmOpen, setCrmOpen, resetDemo } = useCRM();
+  const { leads, crmOpen, setCrmOpen, resetDemo, demoMode, brokerAuthed, logout } = useCRM();
   const [status, setStatus] = useState<LeadStatus | "All">("All");
   const [query, setQuery] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -150,9 +150,14 @@ export default function CRMDashboard() {
               <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
             </span>
-            Live · Demo Mode — leads sync from website & AI chat in real time
+            {demoMode ? "Live · Demo Mode — leads sync from website & AI chat in real time" : "Live · Signed in as broker"}
           </p>
         </div>
+        {brokerAuthed && !demoMode && (
+          <button onClick={logout} className="hidden rounded-full px-3 py-1.5 text-xs font-medium text-white/70 ring-1 ring-white/15 transition hover:bg-white/10 hover:text-white sm:inline-flex">
+            Sign out
+          </button>
+        )}
         <button onClick={() => setCrmOpen(false)} className="grid h-10 w-10 place-items-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white" aria-label="Close CRM">
           <X className="h-5 w-5" />
         </button>
@@ -245,6 +250,7 @@ export default function CRMDashboard() {
                   {exported ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
                   <span className="hidden sm:inline">{exported ? "Exported" : "Export to CSV"}</span>
                 </button>
+                {demoMode && (
                 <button
                   onClick={resetDemo}
                   className="grid h-[42px] w-[42px] place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
@@ -253,6 +259,7 @@ export default function CRMDashboard() {
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
+                )}
               </div>
             </div>
 

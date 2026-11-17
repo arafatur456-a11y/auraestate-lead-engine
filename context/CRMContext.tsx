@@ -45,7 +45,24 @@ interface CRMContextValue {
   lastLead: Lead | null;
   dismissLastLead: () => void;
   unseen: number;
+  /* Access control */
+  demoAllowed: boolean;
+  demoMode: boolean;
+  setDemoMode: (on: boolean) => void;
+  brokerAuthed: boolean;
+  /** True when CRM features (button, lead score, toasts) should be visible. */
+  canOpenCRM: boolean;
+  loginOpen: boolean;
+  closeLogin: () => void;
+  completeLogin: () => void;
+  logout: () => void;
 }
+
+/** Set NEXT_PUBLIC_ALLOW_DEMO_MODE=false on a client's live site to disable Demo Mode entirely. */
+export const DEMO_ALLOWED = process.env.NEXT_PUBLIC_ALLOW_DEMO_MODE !== "false";
+/** Set NEXT_PUBLIC_DEMO_MODE=true to start every visit in Demo Mode (e.g. a sales-demo deployment). */
+const DEMO_DEFAULT = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+const DEMO_KEY = "auraestate.demoMode";
 
 const CRMContext = createContext<CRMContextValue | null>(null);
 
@@ -103,6 +120,42 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const [lastLead, setLastLead] = useState<Lead | null>(null);
   const [unseen, setUnseen] = useState(0);
   const hydrated = useRef(false);
+  const [demoMode, setDemoModeState] = useState(false);
+  const [brokerAuthed, setBrokerAuthed] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const pending = useRef<{ crm?: boolean; demo?: boolean }>({});
+  const urlDemo = useRef(false);
+
+  // Demo Mode: ?demo=true / ?demo=false in the URL wins, then the remembered choice, then the env default.
+  useEffect(() => {
+    if (!DEMO_ALLOWED) return;
+    let on = DEMO_DEFAULT;
+    try {
+      const saved = localStorage.getItem(DEMO_KEY);
+      if (saved !== null) on = saved === "1";
+    } catch {
+      /* ignore */
+    }
+    const q = new URLSearchParams(window.location.search).get("demo");
+    if (q !== null) {
+      on = /^(1|true|on|yes)$/i.test(q);
+      urlDemo.current = on;
+      try {
+        localStorage.setItem(DEMO_KEY, on ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+    }
+    setDemoModeState(on);
+  }, []);
+
+  // Is there a valid broker session cookie?
+  useEffect(() => {
+    fetch("/api/broker-auth")
+      .then((r) => r.json())
+      .then((d: { authed?: boolean }) => setBrokerAuthed(!!d.authed))
+      .catch(() => {});
+  }, []);
 
   // Hydrate from localStorage so demo leads survive refresh.
   useEffect(() => {
@@ -160,13 +213,65 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     setUnseen(0);
   }, []);
 
-  const setCrmOpen = useCallback((open: boolean) => {
-    setCrmOpenState(open);
-    if (open) {
+  const canOpenCRM = demoMode || brokerAuthed;
+
+  const setCrmOpen = useCallback(
+    (open: boolean) => {
+      if (open && !canOpenCRM) {
+        // Production mode: ask for the broker PIN first, then open.
+        pending.current = { crm: true };
+        setLoginOpen(true);
+        return;
+      }
+      setCrmOpenState(open);
+      if (open) {
+        setUnseen(0);
+        setLastLead(null);
+      }
+    },
+    [canOpenCRM],
+  );
+
+  const applyDemo = useCallback((on: boolean) => {
+    setDemoModeState(on);
+    try {
+      localStorage.setItem(DEMO_KEY, on ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const setDemoMode = useCallback(
+    (on: boolean) => {
+      if (!DEMO_ALLOWED) return;
+      if (on && !brokerAuthed && !urlDemo.current) {
+        pending.current = { demo: true };
+        setLoginOpen(true);
+        return;
+      }
+      applyDemo(on);
+      if (!on && !brokerAuthed) setCrmOpenState(false);
+    },
+    [applyDemo, brokerAuthed],
+  );
+
+  const completeLogin = useCallback(() => {
+    setBrokerAuthed(true);
+    setLoginOpen(false);
+    if (pending.current.demo) applyDemo(true);
+    if (pending.current.crm) {
+      setCrmOpenState(true);
       setUnseen(0);
       setLastLead(null);
     }
-  }, []);
+    pending.current = {};
+  }, [applyDemo]);
+
+  const logout = useCallback(() => {
+    fetch("/api/broker-auth", { method: "DELETE" }).catch(() => {});
+    setBrokerAuthed(false);
+    if (!demoMode) setCrmOpenState(false);
+  }, [demoMode]);
 
   const openChatWith = useCallback((intent: LeadIntent) => {
     setChatPreset(intent);
@@ -181,8 +286,23 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       chatPreset, openChatWith, clearChatPreset: () => setChatPreset(null),
       lastLead, dismissLastLead: () => setLastLead(null),
       unseen,
+      demoAllowed: DEMO_ALLOWED,
+      demoMode,
+      setDemoMode,
+      brokerAuthed,
+      canOpenCRM,
+      loginOpen,
+      closeLogin: () => {
+        pending.current = {};
+        setLoginOpen(false);
+      },
+      completeLogin,
+      logout,
     }),
-    [leads, addLead, updateStatus, updateLead, resetDemo, crmOpen, setCrmOpen, chatOpen, chatPreset, openChatWith, lastLead, unseen],
+    [
+      leads, addLead, updateStatus, updateLead, resetDemo, crmOpen, setCrmOpen, chatOpen, chatPreset, openChatWith, lastLead, unseen,
+      demoMode, setDemoMode, brokerAuthed, canOpenCRM, loginOpen, completeLogin, logout,
+    ],
   );
 
   return <CRMContext.Provider value={value}>{children}</CRMContext.Provider>;
