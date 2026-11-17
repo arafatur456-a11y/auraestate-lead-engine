@@ -27,7 +27,7 @@ export interface Lead {
   score: number; // 0–100
 }
 
-export type NewLead = Omit<Lead, "id" | "createdAt" | "score" | "status"> & { status?: LeadStatus };
+export type NewLead = Omit<Lead, "id" | "createdAt" | "score" | "status"> & { status?: LeadStatus; score?: number };
 
 interface CRMContextValue {
   leads: Lead[];
@@ -133,7 +133,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       id: `lead-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       createdAt: new Date().toISOString(),
       status: input.status ?? "New Lead",
-      score: scoreLead(input),
+      score: input.score ?? scoreLead(input),
     };
     setLeads((prev) => [lead, ...prev]);
     setLastLead(lead);

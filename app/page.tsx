@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CRMProvider } from "@/context/CRMContext";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -21,6 +21,16 @@ export default function HomePage() {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [selected, setSelected] = useState<Property | null>(null);
   const results = useMemo(() => applyFilters(PROPERTIES, filters), [filters]);
+
+  // Property cards inside the AI chat open the same detail modal.
+  useEffect(() => {
+    const open = (e: Event) => {
+      const p = PROPERTIES.find((x) => x.id === (e as CustomEvent<string>).detail);
+      if (p) setSelected(p);
+    };
+    window.addEventListener("aura:open-property", open);
+    return () => window.removeEventListener("aura:open-property", open);
+  }, []);
 
   return (
     <CRMProvider>
