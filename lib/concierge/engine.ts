@@ -9,7 +9,7 @@ import { calcMortgage, usd } from "@/lib/mortgage";
 import { estimate } from "@/lib/valuation";
 import { extract, mergeProfile, propertiesMentioned } from "./extract";
 import { BROKERAGE, city } from "./knowledge";
-import type { ConciergeReply, ConciergeState, Field, Offer, Profile } from "./types";
+import type { ConciergeReply, ConciergeState, Confirmed, Field, Offer, Profile } from "./types";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -81,11 +81,23 @@ function search(p: Profile) {
 function criteriaPhrase(p: Profile) {
   const bits: string[] = [];
   if (p.type) bits.push(p.type === "Villa" ? "villas" : `${p.type.toLowerCase()}s`);
-  if (p.minBeds) bits.push(`with ${p.minBeds}+ bedrooms`);
   if (p.locations?.length) bits.push(`in ${listJoin([...new Set(p.locations.map((l) => l.split(",")[0]))])}`);
   if (p.budgetMin && p.budgetMax) bits.push(`between ${formatPrice(p.budgetMin)} and ${formatPrice(p.budgetMax)}`);
   else if (p.budgetMax) bits.push(`under ${formatPrice(p.budgetMax)}`);
   else if (p.budgetMin) bits.push(`over ${formatPrice(p.budgetMin)}`);
+  if (p.minBeds) bits.push(`with ${p.minBeds}+ bedrooms`);
+  return bits.join(" ");
+}
+
+/** What we remember about their search, e.g. "in Miami Beach under $7M with 3+ bedrooms". */
+function memoryPhrase(p: Profile): string {
+  const bits: string[] = [];
+  if (p.type) bits.push(p.type === "Villa" ? "a villa" : `${article(p.type)} ${p.type.toLowerCase()}`);
+  if (p.locations?.length) bits.push(`in ${listJoin([...new Set(p.locations.map((l) => l.split(",")[0]))])}`);
+  if (p.budgetMin && p.budgetMax) bits.push(`between ${formatPrice(p.budgetMin)} and ${formatPrice(p.budgetMax)}`);
+  else if (p.budgetMax) bits.push(`under ${formatPrice(p.budgetMax)}`);
+  else if (p.budgetMin) bits.push(`over ${formatPrice(p.budgetMin)}`);
+  if (p.minBeds) bits.push(`with ${p.minBeds}+ bedrooms`);
   return bits.join(" ");
 }
 
@@ -177,6 +189,16 @@ function nextAsk(st: ConciergeState, c: Composer): Ask | null {
   const bump = (f: Field) => (st.asked[f] = asked(f) + 1);
   const name = firstName(p);
 
+  if (st.closed) return null;
+  if (st.confirmed) {
+    // A next step is locked in: at most one gentle ask for their name, never city/budget/timeline again.
+    if (!p.name && asked("name") < 1) {
+      bump("name");
+      return { text: c.pick(["And who should Alex ask for?", "What name should I give Alex?"]), awaiting: "name" };
+    }
+    return null;
+  }
+
   if (!p.intent && asked("intent") < 1 && st.turns <= 2) {
     bump("intent");
     return { text: c.pick(["Are you looking to buy, sell, or just having a browse for now?", "Are you thinking of buying, or is it a sale you're planning?"]), awaiting: "intent" };
@@ -232,6 +254,7 @@ function nextAsk(st: ConciergeState, c: Composer): Ask | null {
 
 export function suggestionsFor(st: ConciergeState): string[] {
   const p = st.profile;
+  if (st.closed) return [];
   if (!p.intent) return ["I'm looking to buy", "I want to sell", "Book a tour", "Anything in Miami under $7M?"];
   if (st.awaiting === "tourDay") return ["This Saturday", "Tomorrow afternoon", "Next week"];
   if (st.awaiting === "timeline") return ["ASAP", "1–3 months", "Just exploring"];
@@ -284,6 +307,49 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
   const firstContact = newContact && !hasContact(before);
   const newName = !!patch.name && patch.name !== before.name;
   const criteriaChanged = !!(patch.locations || patch.budgetMax || patch.budgetMin || patch.type || patch.minBeds);
+  const nm = name ? `, ${name}` : "";
+  const memory = memoryPhrase(P);
+  const substantive = !s.casual || newContact || newName || criteriaChanged;
+  if (substantive) st.closed = false;
+  const confirm = (what: Confirmed) => {
+    st.confirmed = what;
+  };
+
+  /** Warm sign-off once a next step is booked — no more qualifying questions. */
+  const close = (): { reply: ConciergeReply; state: ConciergeState } => {
+    const prop = byId(P.propertyId);
+    const where = P.email ? "inbox" : "phone";
+    const lines: Record<string, string[]> = {
+      tour: [
+        `You're all set${nm}! Alex will reach out shortly to confirm your ${P.tourDay ? `${P.tourDay} ` : ""}viewing${prop ? ` of ${the(prop)}` : ""}. Have a wonderful day! 🏡`,
+        `Perfect — you're all booked in. Alex will be in touch soon to confirm the details. Have a lovely day${nm}!`,
+      ],
+      valuation: [
+        `You're all set${nm}! Your full valuation report will be with you within 24 hours. Have a wonderful day!`,
+        `Wonderful — Alex is on it, and your market report is on its way. Have a lovely day${nm}! ✨`,
+      ],
+      brochure: [
+        `You're all set${nm}! Keep an eye on your ${where} — Alex will be in touch shortly. Have a wonderful day!`,
+        `Wonderful — everything's on its way to your ${where}. Have a lovely day${nm}! ✨`,
+      ],
+      listings: [
+        `You're all set${nm}! Alex will send those off-market listings shortly. Have a wonderful day!`,
+        `Perfect — keep an eye on your ${where} for some very special homes. Have a lovely day${nm}! ✨`,
+      ],
+      callback: [`You're all set${nm}! Alex will give you a call shortly. Have a wonderful day!`, `Lovely — Alex will be in touch very soon. Have a great day${nm}!`],
+      lender: [`You're all set${nm}! Our lending partner will reach out shortly. Have a wonderful day!`, `Perfect — expect a call from our lender soon. Have a lovely day${nm}!`],
+    };
+    const text = prev.closed
+      ? c.pick(["Take care! 👋", `Speak soon${nm}! 😊`, "Have a lovely day! ✨", "Anytime — bye for now! 👋", "Enjoy the rest of your day! 🌿"])
+      : c.pick(lines[st.confirmed ?? "listings"]);
+    st.closed = true;
+    st.awaiting = null;
+    st.offer = null;
+    return { reply: { bubbles: [text], propertyIds: [], suggestions: [], closing: true }, state: st };
+  };
+
+  /* 0. Booked + "ok / thanks / sounds good / bye" → close gracefully, never restart */
+  if (st.confirmed && s.casual && !newContact && !newName && !criteriaChanged) return close();
 
   const finish = (): { reply: ConciergeReply; state: ConciergeState } => {
     if (!ask && !out.some((x) => x.trim().endsWith("?"))) ask = nextAsk(st, c);
@@ -312,10 +378,47 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
     return finish();
   }
 
+  /* 1b. Small talk: "how are you?", "who are you?", "what can you do?", "nice to meet you" */
+  const chatty = s.smallTalk || s.askElena || s.capabilities || s.niceToMeet;
+  if (chatty && !criteriaChanged && !s.search && !refProp && !s.tour && !s.sell && !s.mortgage && !newContact) {
+    if (s.greeting) out.push(c.pick([`Hi${name ? ` ${name}` : ""}!`, "Hello!", "Hey there!"]));
+    if (newName) out.push(c.pick([`Lovely to meet you, ${name}.`, `Great to meet you, ${name}!`]));
+    if (s.smallTalk && /\b(good|great|well|fine|not bad|ok(ay)?|alright|grand)\b/i.test(text))
+      out.push(c.pick(["Glad to hear it! I'm doing really well too, thank you. 😊", "Lovely to hear! All good on my side too, thanks for asking."]));
+    else if (s.smallTalk)
+      out.push(c.pick(["I'm doing wonderfully, thank you for asking! 😊", "All good here — thanks so much for asking!", "Really well, thank you — it's been a lovely day of house-hunting with clients."]));
+    if (s.niceToMeet && !newName) out.push(c.pick([`Lovely to meet you too${nm}!`, `The pleasure's all mine${nm}.`]));
+    if (s.askElena)
+      out.push(c.pick(["I'm Elena, Senior Client Advisor here at AuraEstate — I help clients find the right home, run the numbers and set up viewings with Alex, our principal broker.", "I'm Elena from AuraEstate! I look after clients day and night, and Alex, our principal broker, takes it from there in person."]));
+    if (s.capabilities)
+      out.push(c.pick(["I can match you with homes from our listings, work out monthly payments, book private viewings, or give you an instant valuation if you're selling.", "Quite a lot! Finding homes that fit your wishlist, running mortgage numbers, booking tours, and valuing your current place if you're selling."]));
+    if (st.confirmed) ask = { text: c.pick(["Is there anything else I can help with?", "Anything else on your mind?"]), awaiting: null };
+    else if (!P.intent) ask = { text: c.pick(["What brings you to AuraEstate today — buying, selling, or just browsing?", "Are you thinking of buying or selling at the moment?"]), awaiting: "intent" };
+    else if (memory) ask = { text: c.pick([`Shall we pick up where we left off — homes ${memory}?`, `Want to keep looking at homes ${memory}?`]), awaiting: null };
+    return finish();
+  }
+
+  /* 1c. "What was my budget again?" — show we remember */
+  if (s.recall) {
+    const bits: string[] = [];
+    if (P.intent === "Sell") bits.push(`you're selling${P.sellAddress ? ` ${P.sellAddress}` : ""}${P.sellEstimate ? ` (est. ${formatPrice(P.sellEstimate)})` : ""}`);
+    else if (memory) bits.push(`you're looking for homes ${memory}`);
+    const prop = byId(P.propertyId);
+    if (prop) bits.push(`you liked ${the(prop)}`);
+    if (P.timeline) bits.push(`your timeline is ${P.timeline === "ASAP" ? "ASAP" : P.timeline.toLowerCase()}`);
+    if (P.wantsTour) bits.push(`you'd like a viewing${P.tourDay ? ` on ${P.tourDay}` : ""}`);
+    out.push(bits.length ? c.pick([`Here's what I have so far: ${listJoin(bits)}.`, `From what you've told me, ${listJoin(bits)}.`]) : c.pick(["We haven't pinned anything down yet — tell me a city or budget and I'll keep track of it for you.", "Nothing saved just yet! Give me a city, budget or must-have and I'll remember it."]));
+    if (bits.length) ask = { text: c.pick(["Anything you'd like to change?", "Shall we keep going from there?"]), awaiting: null };
+    return finish();
+  }
+
   /* 2. Wants a real person */
   if (s.wantsHuman && !newContact) {
     out.push(c.pick(["Of course — Alex would love to speak with you.", "Absolutely, I'll get Alex on it."]));
-    if (hasContact(P)) out.push(`He'll reach out on ${P.phone ?? P.email} shortly${name ? `, ${name}` : ""}.`);
+    if (hasContact(P)) {
+      out.push(`He'll reach out on ${P.phone ?? P.email} shortly${nm}.`);
+      confirm("callback");
+    }
     else ask = { text: c.pick(["What's the best number for him to call you on?", "What's the best mobile to reach you on?"]), awaiting: "contact", offer: "alex" };
     return finish();
   }
@@ -326,13 +429,25 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
     if (firstContact) {
       const prop = byId(P.propertyId);
       const channel = patch.phone ? "phone" : "inbox";
-      if (P.wantsTour && prop && P.intent !== "Sell")
+      if (prevOffer === "alex") {
+        out.push(c.pick([`Thank you${nm}! Alex will give you a call shortly.`, "Perfect — I've passed that to Alex, and he'll be in touch very soon."]));
+        confirm("callback");
+      } else if (prevOffer === "lender") {
+        out.push(c.pick(["Thank you! Our lending partner will reach out shortly to get your pre-approval started.", "Perfect — I'll have our lender get in touch with you."]));
+        confirm("lender");
+      } else if (P.wantsTour && prop && P.intent !== "Sell") {
+        confirm("tour");
         out.push(c.pick([`Thank you${name && !newName ? `, ${name}` : ""}! Alex will text you shortly to confirm your private tour of ${the(prop)}${P.tourDay ? ` on ${P.tourDay}` : ""}.`, `Perfect — I've booked that in with Alex, and he'll confirm your viewing of ${the(prop)} shortly.`]));
-      else if (P.intent === "Sell")
+      } else if (P.intent === "Sell") {
+        confirm("valuation");
         out.push(c.pick([`Thank you! Alex will send your full valuation report and a pricing strategy within 24 hours.`, `Wonderful — Alex will prepare a full market analysis for your home and send it over within a day.`]));
-      else if (prop || prevOffer === "brochure")
+      } else if (prop || prevOffer === "brochure") {
+        confirm("brochure");
         out.push(c.pick([`Thank you! Alex will send the full brochure for ${prop ? the(prop) : "the property"} to your ${channel} shortly, plus a few off-market homes I think you'll love.`, `Done — ${prop ? the(prop) : "the brochure"} details are on their way to your ${channel}, along with some private listings.`]));
-      else out.push(c.pick([`Thank you! Agent Alex will send exclusive off-market listings to your ${channel} shortly.`, `Perfect, thank you — Alex will be in touch with some exclusive off-market options very soon.`]));
+      } else {
+        confirm("listings");
+        out.push(c.pick([`Thank you! Agent Alex will send exclusive off-market listings to your ${channel} shortly.`, `Perfect, thank you — Alex will be in touch with some exclusive off-market options very soon.`]));
+      }
       if (!P.name) ask = { text: c.pick(["And who should Alex ask for?", "And what name should I pass along to Alex?"]), awaiting: "name" };
     } else {
       out.push(c.pick(["Perfect, I've added that too.", "Got it — I've updated your details for Alex."]));
@@ -419,11 +534,70 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
     ids = [prop.id];
     if (P.tourDay) {
       out.push(c.pick([`${P.tourDay} works beautifully for ${the(prop)}.`, `Lovely — I've pencilled in ${P.tourDay} for ${the(prop)}.`]));
+      if (hasContact(P)) confirm("tour");
       if (hasContact(P)) out.push(c.pick(["Alex will confirm the exact time with you shortly.", `Alex will be in touch to lock in the time${name ? `, ${name}` : ""}.`]));
       else ask = { text: c.pick(["What's the best mobile number to confirm the time with you?", "What number should Alex text to confirm?"]), awaiting: "contact", offer: "tour" };
     } else {
       out.push(c.pick([`I'd love to arrange a private showing of ${the(prop)} in ${city(prop)}.`, `${The(prop)} is even better in person — let's get you through the door.`]));
       ask = { text: c.pick(["What day works best for you?", "When would suit you to see it?"]), awaiting: "tourDay" };
+    }
+    return finish();
+  }
+
+  /* 7b. "Send me the brochure / floor plans" */
+  if (s.wantsBrochure) {
+    const prop = refProp ?? byId(P.propertyId) ?? byId(st.lastShown[0]);
+    if (prop) {
+      P.propertyId = prop.id;
+      ids = [prop.id];
+    }
+    if (hasContact(P)) {
+      out.push(c.pick([`Done — I'll have Alex send ${prop ? `the full brochure for ${the(prop)}` : "everything"} to ${P.email ?? P.phone} shortly.`, `Of course! ${prop ? `The ${prop.title.replace(/^the /i, "")} brochure` : "The details"} will be with you shortly.`]));
+      confirm("brochure");
+    } else {
+      out.push(c.pick([`Of course — ${prop ? `the ${prop.title.replace(/^the /i, "")} brochure has the floor plans and full photo set` : "Alex has full brochures for all our homes"}.`, "Happy to send that over."]));
+      ask = { text: c.pick(["What's the best email for you?", "Where should I send it — email or mobile?"]), awaiting: "contact", offer: "brochure" };
+    }
+    return finish();
+  }
+
+  /* 7c. "Show me similar / cheaper / bigger" — remember what they've seen and move on from it */
+  if (s.similar || s.cheaper || s.bigger) {
+    const base = refProp ?? byId(P.propertyId) ?? byId(st.lastShown[0]);
+    const seen = new Set(s.similar ? [...st.lastShown, ...(base ? [base.id] : [])] : base ? [base.id] : []);
+    const crit: Profile = s.similar && !s.cheaper && !s.bigger
+      ? { ...P, type: base?.type ?? P.type, budgetMax: undefined, budgetMin: undefined, minBeds: undefined }
+      : {
+          ...P,
+          budgetMax: s.cheaper ? Math.max(0, (base?.price ?? P.budgetMax ?? 5_000_000) - 1) : P.budgetMax,
+          minBeds: s.bigger ? (base?.beds ?? P.minBeds ?? 3) + 1 : P.minBeds,
+        };
+    const fresh = (list: typeof PROPERTIES) => list.filter((x) => !seen.has(x.id)).sort((a, b) => Number(st.lastShown.includes(a.id)) - Number(st.lastShown.includes(b.id)));
+    let found = fresh(search(crit));
+    let broadened = false;
+    if (!found.length) {
+      found = fresh(search({ ...crit, locations: undefined, type: s.similar ? undefined : crit.type }));
+      broadened = found.length > 0 && !!crit.locations?.length;
+    }
+    if (s.similar && base) found.sort((a, b) => Math.abs(a.price - base.price) - Math.abs(b.price - base.price));
+    if (s.cheaper) found.sort((a, b) => b.price - a.price); // closest step down first
+    const what = s.cheaper ? "a little lower in price" : s.bigger ? "with more space" : "in a similar spirit";
+    if (found.length) {
+      const top = found.slice(0, 2);
+      ids = top.map((x) => x.id);
+      const first = top[0];
+      out.push(
+        c.pick([
+          `For something ${what}, ${the(first)} in ${city(first)} at ${formatPrice(first.price)} is lovely — ${feat(first, 0)} and ${feat(first, 1)}.`,
+          `If you'd like something ${what}, have a look at ${the(first)} in ${city(first)} (${formatPrice(first.price)}, ${first.beds} beds).`,
+        ]),
+      );
+      if (top[1]) out.push(c.pick([`${The(top[1])} in ${city(top[1])} at ${formatPrice(top[1].price)} is another good fit.`, `There's also ${the(top[1])} at ${formatPrice(top[1].price)}.`]));
+      if (broadened) out.push(c.pick([`${top.length > 1 ? "They're" : "It's"} outside ${listJoin([...new Set(crit.locations!.map((l) => l.split(",")[0]))])}, but worth a look.`, "Different area, mind you — but a beautiful home."]));
+    } else {
+      out.push(c.pick([`${base ? The(base) : "What you've seen"} is actually the ${s.cheaper ? "most accessibly priced" : s.bigger ? "most spacious" : "closest"} public match I have right now.`, "That's the best of what's on the open market for that, I'm afraid."]));
+      if (!hasContact(P))
+        ask = { text: c.pick(["Alex often has quieter off-market options, though — shall I have him send a few? Just leave your email or mobile.", "Want Alex to send some off-market alternatives? Just drop your email or number."]), awaiting: "contact", offer: "offmarket" };
     }
     return finish();
   }
@@ -459,7 +633,7 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
   }
 
   /* 12. Property search */
-  if (criteriaChanged || s.search || s.unknownPlace || (s.buy && (P.locations || P.budgetMax))) {
+  if (criteriaChanged || s.search || s.unknownPlace || (s.buy && (P.locations || P.budgetMax) && !st.lastShown.length)) {
     if (s.unknownPlace && !patch.locations) {
       out.push(c.pick([`We don't have public listings in ${s.unknownPlace} right now — our core markets are LA, Miami, Austin, New York and London.`, `${s.unknownPlace} isn't one of our markets yet, I'm afraid; we focus on LA, Miami, Austin, Manhattan and London.`]));
       ask = { text: c.pick(["Alex does work with trusted partner brokers there — would you like an introduction?", "Would any of our markets work for you, or shall I ask Alex for a referral?"]), awaiting: null, offer: "alex" };
@@ -467,7 +641,13 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
     }
     const results = search(P);
     const crit = criteriaPhrase(P);
-    if (results.length === 1) {
+    if (results.length === 1 && st.lastShown.length === 1 && st.lastShown[0] === results[0].id) {
+      const p = results[0];
+      ids = [p.id];
+      out.push(c.pick([`${The(p)} is still the best public match ${crit || "for you"}.`, `For homes ${crit || "like that"}, ${the(p)} remains the standout on the open market.`]));
+      if (!hasContact(P))
+        ask = { text: c.pick(["Alex usually has a few off-market homes like it too — shall I have him send them? Just leave your email or mobile.", "Want me to have Alex send the off-market options in that range as well? Just drop your email or number."]), awaiting: "contact", offer: "offmarket" };
+    } else if (results.length === 1) {
       const p = results[0];
       ids = [p.id];
       P.propertyId = p.id;
@@ -513,7 +693,10 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
   /* 13. Affirmations to an earlier offer */
   if (s.affirm && prevOffer) {
     if (prevOffer === "tour") return finish();
-    if (hasContact(P)) out.push(c.pick([`Done — Alex will send it to ${P.email ?? P.phone} shortly.`, "Wonderful, I'll pass that straight to Alex."]));
+    if (hasContact(P)) {
+      out.push(c.pick([`Done — Alex will send it to ${P.email ?? P.phone} shortly.`, "Wonderful, I'll pass that straight to Alex."]));
+      confirm(prevOffer === "valuation" ? "valuation" : prevOffer === "lender" ? "lender" : prevOffer === "alex" ? "callback" : prevOffer === "brochure" ? "brochure" : "listings");
+    }
     else ask = { text: c.pick(["Wonderful — what's the best email or mobile for you?", "Great! Where should Alex send it — email or mobile?"]), awaiting: "contact", offer: prevOffer };
     return finish();
   }
@@ -545,7 +728,9 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
 
   if (s.greeting && !newName) {
     out.push(c.pick(st.turns > 1 ? [`Hi${name ? ` ${name}` : ""}! Lovely to hear from you.`, "Hello again! 😊"] : [`Hi${name ? ` ${name}` : ""}! Lovely to hear from you.`, "Hey there! 😊"]));
-    if (!P.intent) ask = { text: c.pick(["Are you thinking about buying or selling?", "What can I help you find?"]), awaiting: "intent" };
+    if (st.confirmed) ask = { text: c.pick(["Is there anything else I can help with?", "What else can I do for you?"]), awaiting: null };
+    else if (memory && st.turns > 1) ask = { text: c.pick([`Still thinking about homes ${memory}?`, `Shall we carry on with homes ${memory}?`]), awaiting: null };
+    else if (!P.intent) ask = { text: c.pick(["Are you thinking about buying or selling?", "What can I help you find?"]), awaiting: "intent" };
     return finish();
   }
 
@@ -563,6 +748,17 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
     return finish();
   }
 
+  if (P.intent === "Buy" && s.buy && memory) {
+    out.push(c.pick([`Perfect — I'm keeping homes ${memory} in mind for you.`, `Got it. I'll stay focused on homes ${memory}.`]));
+    return finish();
+  }
+
+  /* Plain acknowledgements ("ok", "cool") mid-conversation: keep things moving without resetting. */
+  if (s.casual && !s.thanks && !s.bye) {
+    out.push(c.pick(["Perfect.", "Lovely.", "Great!", "Wonderful."]));
+    return finish();
+  }
+
   if (P.intent === "Buy" && (s.buy || prev.awaiting === "intent")) {
     out.push(c.pick(["Exciting! Let's find you something special.", "Lovely — I'd love to help you find the one.", "Wonderful, that's my favourite kind of search."]));
     ask = { text: c.pick(["Which city are you focused on, and roughly what budget?", "Where are you hoping to be, and is there a budget you're working within?"]), awaiting: "location" };
@@ -577,6 +773,14 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
   if (mentioned.length) {
     ids = mentioned;
     out.push(c.pick(["Happy to tell you more about that one.", "Ah, that's a special one."]));
+    return finish();
+  }
+  if (st.confirmed) {
+    out.push(c.pick(["Is there anything else I can help with before Alex reaches out?", "Happy to help with anything else in the meantime — payments, other homes, or questions about the area.", "Anything else you'd like to know while you wait to hear from Alex?"]));
+    return finish();
+  }
+  if (memory) {
+    out.push(c.pick([`Would you like to keep exploring homes ${memory}, or try something different?`, `I can keep searching homes ${memory}, run the monthly numbers, or book a viewing — what would help most?`]));
     return finish();
   }
   out.push(

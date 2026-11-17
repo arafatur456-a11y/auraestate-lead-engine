@@ -153,7 +153,8 @@ export function parseTourDay(text: string): string | undefined {
   if (!day) return undefined;
   const time = /\b(\d{1,2}(?::\d{2})?\s?(?:am|pm))\b/.exec(t)?.[1] ?? /\b(morning|afternoon|evening|lunchtime)\b/.exec(t)?.[1];
   const cap = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
-  return time ? `${cap(day)}, ${time.replace(/\s/g, "")}` : cap(day);
+  if (!time) return cap(day);
+  return /\d/.test(time) ? `${cap(day)} at ${time.replace(/\s/g, "")}` : `${cap(day)} ${time}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -165,7 +166,8 @@ const NAME_STOP = new Set(
     "looking interested a an the just not thinking selling buying trying wondering curious here from in on ready planning also very so " +
     "good fine great ok okay moving relocating searching hoping open flexible pre retired currently still after going considering new " +
     "available sure happy glad sorry yes no yeah nope hi hello hey thanks thank interested keen buyer seller investor agent broker " +
-    "out back home married single back calling writing reaching emailing texting definitely probably maybe actually really please yep yup nah hmm what why how when where who which tour book buy sell rent price villa penthouse apartment house home ok at on after before tomorrow today tonight later anytime whenever soon asap now"
+    "out back home married single back calling writing reaching emailing texting definitely probably maybe actually really please yep yup nah hmm what why how when where who which tour book buy sell rent price villa penthouse apartment house home ok at on after before tomorrow today tonight later anytime whenever soon asap now " +
+    "hiya howdy morning afternoon evening nice cool perfect awesome lovely elena alex aura auraestate show send tell give"
   ).split(" "),
 );
 
@@ -182,6 +184,9 @@ export function parseName(text: string, awaiting: boolean): string | undefined {
   if (im && !NAME_STOP.has(im[1].split(/\s+/)[0].toLowerCase())) return im[1];
   const here = /^([A-Z][a-z'-]+(?:\s+[A-Z][a-z'-]+)?)\s+here\b/.exec(text.trim());
   if (here) return here[1];
+  // "Tom Hardy, 310 555 0144" — a name sitting right before contact details
+  const lead = /^\s*([A-Za-z][a-z'-]+(?:\s+[A-Za-z][a-z'-]+){0,2})\s*[,\-–:]\s*(?=\+?\d|[\w.+-]+@)/.exec(text);
+  if (lead && !lead[1].split(/\s+/).some((w) => NAME_STOP.has(w.toLowerCase()))) return titleCase(lead[1]);
 
   if (awaiting) {
     const cleaned = text.trim().replace(/[.!,]+$/g, "").replace(/^(it'?s|i'?m|im|sure,?|yes,?|ok,?)\s+/i, "");
@@ -227,6 +232,22 @@ export interface Signals {
   search: boolean;
   attributes: string[];
   referencedIds: string[];
+  /** Pure pleasantry/acknowledgement: "ok", "thanks!", "sounds good", "bye 👋" */
+  casual: boolean;
+  /** "How are you?", "how's it going", "and you?" */
+  smallTalk: boolean;
+  /** "What's your name?", "who are you?" */
+  askElena: boolean;
+  /** "What can you do / help with?" */
+  capabilities: boolean;
+  niceToMeet: boolean;
+  /** "What was my budget again?", "remind me what I said" */
+  recall: boolean;
+  similar: boolean;
+  cheaper: boolean;
+  bigger: boolean;
+  /** "Send me the brochure / details / floor plans" */
+  wantsBrochure: boolean;
   unknownPlace?: string;
   downPct?: number;
   rate?: number;
@@ -319,7 +340,7 @@ export function extract(text: string, state: ConciergeState): Extraction {
     rent: /\b(rent|rents|rental|rentals|renting|lease|leases|leasing)\b/i.test(t) && !/\brental income\b/i.test(t),
     offMarket: /\b(off[- ]?market|pocket listing|private listing|not (listed|on zillow)|quiet listing)\b/i.test(t),
     fees: /\b(fee|fees|commission|charge|cost (me )?to use)\b/i.test(t),
-    about: /\b(who (are you|is alex)|about (you|alex|the company|auraestate|your (team|agency|firm))|your (agency|company|brokerage|team|track record)|how long have you|experience)\b/i.test(t),
+    about: /\b(who is alex|about (alex|the company|auraestate|your (team|agency|firm|company))|your (agency|company|brokerage|team|track record)|how long have you been|experience)\b/i.test(t),
     office: /\b(office|where are you (based|located)|your address|visit you|headquarters)\b/i.test(t),
     affirm: /^(yes|yeah|yep|yup|sure|ok(ay)?|please( do)?|absolutely|definitely|sounds (good|great|perfect)|go ahead|of course|that would be (great|lovely|perfect)|love (to|that)|why not|y)\b/i.test(low),
     negative: /^(no|nope|nah|not (really|now|yet)|maybe later|i'?m good|no thanks)\b/i.test(low),
@@ -327,6 +348,16 @@ export function extract(text: string, state: ConciergeState): Extraction {
     search: /\b(anything|any(thing)? (in|under|for)|do you have|got any|show me|options|what'?s available|listings|homes|properties|places)\b/i.test(t),
     attributes: ATTRS.filter(([, re]) => re.test(t)).map(([k]) => k),
     referencedIds: [],
+    casual: isCasual(t),
+    smallTalk: /\b(how are (you|u|things)|how'?re you|how'?s it going|how have you been|how'?s (your|ur) day|what'?s up|wassup|how do you do)\b|\b(and|how about) (you|u)\s*\??\s*$|(^|[,.!]\s*)(and )?(you|u|yourself)\s*\?\s*$/i.test(t),
+    askElena: /\b(what'?s|what is) your name\b|\bwho (are|r) (you|u)\b|\bwho am i (talking|speaking|chatting) (to|with)\b/i.test(t),
+    capabilities: /\bwhat (can|do) you (do|help( me)?( with)?|offer)\b|\bhow (can|do) you help\b|\bwhat are you (able|for)\b/i.test(t),
+    niceToMeet: /\b(nice|lovely|great|good|pleasure) (to )?(meet(ing)?|chat(ting)? with) you\b/i.test(t),
+    recall: /\b(what (was|is|were) my|remind me|what did i (say|tell|mention)|what do you (know|remember) about me|my (budget|criteria|search|preferences) again)\b/i.test(t),
+    similar: /\b(similar|like (it|that|this)|alternatives?|other options|something else|anything else like|more like)\b/i.test(t),
+    cheaper: /\b(cheaper|less expensive|lower (price|budget)|more affordable|smaller budget|budget[- ]friendly)\b/i.test(t),
+    bigger: /\b(bigger|larger|more (space|room|bedrooms|beds)|extra bedroom)\b/i.test(t),
+    wantsBrochure: /\b(brochure|floor ?plans?|full (details|photo set|photos)|send (me )?(the |some |more )?(details|info|information|photos|listings?))\b/i.test(t),
     unknownPlace,
   };
 
@@ -355,7 +386,7 @@ export function extract(text: string, state: ConciergeState): Extraction {
       refs = [state.lastShown[0]];
     }
   }
-  if (!refs.length && (s.attributes.length || s.detail) && !patch.locations && !budget && !s.search) {
+  if (!refs.length && (s.attributes.length || s.detail) && !patch.locations && !budget && !s.search && patch.minBeds === undefined && !s.similar && !s.cheaper && !s.bigger) {
     const ctx = state.lastShown.length === 1 ? state.lastShown[0] : state.profile.propertyId;
     if (ctx) refs = [ctx];
   }
@@ -380,6 +411,27 @@ export function extract(text: string, state: ConciergeState): Extraction {
   }
 
   return { patch, signals: s };
+}
+
+const CASUAL_WORDS = new Set(
+  (
+    "ok okay okey k kk okk alright alrighty right sure cool nice great perfect awesome amazing wonderful lovely brilliant fantastic excellent fab " +
+    "thanks thank thx ty you cheers much so very appreciate appreciated it that's thats all good fine got will do sounds sound noted " +
+    "bye goodbye byebye see ya later cya take care have a day night evening weekend too you've been " +
+    "helpful yes yeah yep yup no nope nothing else for now that is set done gotcha understood super ace sweet lol haha oh ah and " +
+    "elena talk soon speak catch"
+  ).split(" "),
+);
+
+/** True when the whole message is just an acknowledgement / pleasantry / goodbye. */
+export function isCasual(text: string): boolean {
+  const words = text
+    .toLowerCase()
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, " ")
+    .replace(/[^a-z' ]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  return words.length > 0 && words.length <= 8 && words.every((w) => CASUAL_WORDS.has(w));
 }
 
 /** Merge a patch into a profile without erasing known values with undefined ones. */

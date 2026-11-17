@@ -1,6 +1,6 @@
 import { AGENT, PROPERTIES, formatFullPrice, formatPrice, type Property } from "@/lib/data";
 import { INSURANCE_RATE, PMI_RATE, PROPERTY_TAX_RATE, calcMortgage, usd } from "@/lib/mortgage";
-import type { Profile } from "./types";
+import type { Confirmed, Profile } from "./types";
 
 /** Brokerage facts — single source of truth for both the AI prompt and the fallback engine. */
 export const BROKERAGE = {
@@ -85,7 +85,7 @@ function describeProfile(p: Profile) {
 }
 
 /** Full system prompt for the LLM: persona + rules + knowledge base + live lead state. */
-export function buildSystemPrompt(profile: Profile, now = new Date()): string {
+export function buildSystemPrompt(profile: Profile, confirmed: Confirmed = null, now = new Date()): string {
   const { known, missing } = describeProfile(profile);
   const contactMissing = !profile.email && !profile.phone;
   return `You are Elena, Senior Client Advisor at ${BROKERAGE.name}, chatting with a website visitor in a small chat widget. Today is ${now.toDateString()}.
@@ -103,6 +103,16 @@ The chat opened with you introducing yourself and asking whether they are buying
 - For payment questions, use the pre-computed monthly estimates or the formula below, and say it's an estimate.
 - When nothing public matches, say so honestly, suggest the closest match, and mention Alex can share off-market options privately.
 - No legal, tax or lending advice beyond general estimates.
+
+# Conversation & memory
+- Remember everything the visitor has said in this chat (city, budget, bedrooms, homes they liked, timeline) and build on it. Never ask again for anything listed under "Known so far".
+- Small talk is welcome: answer greetings and "how are you?" warmly and briefly (e.g. "I'm doing wonderfully, thank you for asking!"), then gently steer back to how you can help. Never answer small talk with a generic "what city or budget?" prompt.
+- If they say "ok", "cool" or "sounds good" mid-conversation, acknowledge briefly and continue from where you were — don't restart.
+${
+  confirmed
+    ? `- STATUS: a next step is already confirmed (${confirmed}). Do not restart qualification or ask about city/budget/timeline again. If the visitor replies with thanks/ok/sounds good/bye, close warmly in ONE sentence with no question, e.g. "You're all set! Alex will reach out shortly to confirm. Have a wonderful day!"`
+    : "- STATUS: nothing booked yet."
+}
 
 # Honesty
 - If the visitor sincerely asks whether you're a human or a bot, be truthful: you're AuraEstate's AI client advisor, and Alex (a real broker) personally follows up. Then carry on helpfully.

@@ -27,7 +27,7 @@ The chat widget is **Elena, Senior Client Advisor**. She answers questions about
 - **Live AI mode:** add one key in Vercel (**Settings → Environment Variables**) and redeploy. The `/api/chat` route uses the first key it finds:
   - `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`, default `claude-sonnet-5-5`)
   - `OPENAI_API_KEY` (optional `OPENAI_MODEL`, default `gpt-4.1-mini`)
-  - `OPENROUTER_API_KEY` (optional `OPENROUTER_MODEL`, default `openrouter/auto`)
+  - `OPENROUTER_API_KEY` (optional `OPENROUTER_MODEL`, default `google/gemini-2.0-flash-001`; `meta-llama/llama-3.3-70b-instruct` also works well). This is the quickest low-cost setup: create a key at openrouter.ai, paste it into Vercel, redeploy.
 
   Each request includes the full listings, mortgage maths, brokerage facts and what's known about the visitor so far. Elena is told to quote only real listings, keep replies to 1–3 sentences and say she's an AI if asked. The route is rate-limited per IP and has a 15 s timeout. See `.env.example`.
 - **No key (default demo):** a built-in conversation engine (`lib/concierge/engine.ts`) works out what the visitor wants (buy, sell, tour, budget, location, beds, timeline, contact details), searches the listings, works out payments and valuations, and writes varied replies. It never repeats a sentence within a conversation. If the AI provider fails or times out, the chat switches to this engine without showing an error.
@@ -41,7 +41,9 @@ By default the site is in **production mode**. Visitors see a clean experience: 
 | | Production mode (default) | Demo Mode |
 |---|---|---|
 | Turn on | — | `?demo=true` in the URL, or the **Demo Mode** switch (visible only to a signed-in broker) |
-| Broker CRM | Needs the broker PIN (**Broker login** in the footer) | One click from the navbar, chat or valuation |
+
+The **Live Broker CRM · DEMO** button is always in the navbar so it's easy to find during a pitch. Set `NEXT_PUBLIC_SHOW_CRM_BUTTON=false` to hide it on a client's live site.
+| Broker CRM | **Live Broker CRM** navbar button → asks for the broker PIN | One click from the navbar, chat or valuation |
 | Lead score / "View in CRM" in chat | Hidden | Shown |
 | New-lead pop-ups and navbar badge | Signed-in broker only | Shown |
 

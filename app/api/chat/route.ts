@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildSystemPrompt } from "@/lib/concierge/knowledge";
-import type { ChatTurn, Profile } from "@/lib/concierge/types";
+import type { ChatTurn, Confirmed, Profile } from "@/lib/concierge/types";
 
 /**
  * POST /api/chat — Elena, the AI property concierge.
@@ -8,7 +8,8 @@ import type { ChatTurn, Profile } from "@/lib/concierge/types";
  * Uses the first configured provider:
  *   ANTHROPIC_API_KEY  (model: ANTHROPIC_MODEL,  default claude-sonnet-5-5)
  *   OPENAI_API_KEY     (model: OPENAI_MODEL,     default gpt-4.1-mini)
- *   OPENROUTER_API_KEY (model: OPENROUTER_MODEL, default openrouter/auto)
+ *   OPENROUTER_API_KEY (model: OPENROUTER_MODEL, default google/gemini-2.0-flash-001 — fast & low-cost;
+ *                       e.g. meta-llama/llama-3.3-70b-instruct also works well)
  *
  * With no key configured it answers { fallback: true } and the widget switches to the
  * built-in conversation engine, so the public demo always works.
@@ -25,7 +26,7 @@ function resolveProvider(): Provider | null {
   if (process.env.OPENAI_API_KEY)
     return { name: "openai", key: process.env.OPENAI_API_KEY, model: process.env.OPENAI_MODEL || "gpt-4.1-mini" };
   if (process.env.OPENROUTER_API_KEY)
-    return { name: "openrouter", key: process.env.OPENROUTER_API_KEY, model: process.env.OPENROUTER_MODEL || "openrouter/auto" };
+    return { name: "openrouter", key: process.env.OPENROUTER_API_KEY, model: process.env.OPENROUTER_MODEL || "google/gemini-2.0-flash-001" };
   return null;
 }
 
@@ -79,6 +80,7 @@ function sanitizeProfile(raw: unknown): Profile {
     wantsTour: r.wantsTour === true,
     propertyId: str(r.propertyId),
     sellAddress: str(r.sellAddress),
+    sellEstimate: num(r.sellEstimate),
   };
 }
 
@@ -144,7 +146,7 @@ export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
   if (rateLimited(ip)) return NextResponse.json({ fallback: true, reason: "rate_limited" }, { status: 429 });
 
-  let body: { messages?: unknown; profile?: unknown };
+  let body: { messages?: unknown; profile?: unknown; confirmed?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -153,7 +155,9 @@ export async function POST(req: Request) {
   const messages = sanitizeMessages(body.messages);
   if (!messages) return NextResponse.json({ error: "invalid_messages" }, { status: 400 });
 
-  const system = buildSystemPrompt(sanitizeProfile(body.profile));
+  const CONFIRMED = ["tour", "valuation", "brochure", "listings", "callback", "lender"];
+  const confirmed = (CONFIRMED.includes(body.confirmed as string) ? body.confirmed : null) as Confirmed;
+  const system = buildSystemPrompt(sanitizeProfile(body.profile), confirmed);
   try {
     const signal = AbortSignal.timeout(15_000);
     const text =

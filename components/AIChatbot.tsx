@@ -170,19 +170,20 @@ export default function AIChatbot() {
       let chipList = local.reply.suggestions;
       let wait = typingDelay();
 
-      if (modeRef.current === "ai") {
+      // Simple sign-offs after a booking are answered locally — instant, consistent, and no API cost.
+      if (modeRef.current === "ai" && !local.reply.closing) {
         const t0 = Date.now();
         setTyping(true);
         try {
           const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ messages: historyRef.current, profile: local.state.profile }),
+            body: JSON.stringify({ messages: historyRef.current, profile: local.state.profile, confirmed: local.state.confirmed }),
           });
           const data = (await res.json()) as { reply?: string; fallback?: boolean };
           if (data.reply) {
             bubbles = data.reply.split(/\n\s*\n/).map((b) => b.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean).slice(0, 2);
-            next = absorbAssistantReply({ ...local.state, said: prev.said, awaiting: prev.awaiting, offer: prev.offer }, data.reply);
+            next = absorbAssistantReply({ ...local.state, said: prev.said, awaiting: prev.awaiting, offer: prev.offer, closed: prev.closed }, data.reply);
             ids = propertiesMentioned(data.reply).slice(0, 3);
             chipList = suggestionsFor(next);
           } else if (data.fallback) {

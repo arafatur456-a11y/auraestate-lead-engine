@@ -15,6 +15,9 @@ const LINKS = [
   { href: "#why-us", label: "Why Choose Us" },
 ];
 
+/** The CRM button is always visible for pitching; set NEXT_PUBLIC_SHOW_CRM_BUTTON=false to hide it on a client's live site. */
+const SHOW_CRM_BUTTON = process.env.NEXT_PUBLIC_SHOW_CRM_BUTTON !== "false";
+
 export function Logo({ light = true }: { light?: boolean }) {
   return (
     <a href="#top" className="group flex items-center gap-2.5" aria-label="AuraEstate Premier Properties — home">
@@ -38,8 +41,9 @@ export function Logo({ light = true }: { light?: boolean }) {
 }
 
 export default function Navbar() {
-  const { setCrmOpen, openChatWith, unseen, canOpenCRM, demoMode } = useCRM();
+  const { setCrmOpen, openChatWith, unseen, canOpenCRM, demoMode, brokerAuthed } = useCRM();
   const badge = canOpenCRM ? unseen : 0; // visitors never see broker notifications
+  const showCrmButton = SHOW_CRM_BUTTON || canOpenCRM;
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -72,14 +76,14 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
-          {canOpenCRM && (
+          {showCrmButton && (
           <button
             onClick={() => setCrmOpen(true)}
             className="relative ml-1 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/20"
           >
             <KeyRound className="h-4 w-4" />
-            Broker CRM
-            <span className="rounded-full bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">{demoMode ? "Demo" : "Broker"}</span>
+            Live Broker CRM
+            <span className="rounded-full bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">{brokerAuthed && !demoMode ? "Broker" : "Demo"}</span>
             {badge > 0 && (
               <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white ring-2 ring-slate-950">
                 {badge}
@@ -134,7 +138,7 @@ export default function Navbar() {
                   {l.label}
                 </a>
               ))}
-              {canOpenCRM && (
+              {showCrmButton && (
               <button
                 onClick={() => {
                   setMobileOpen(false);
@@ -143,9 +147,9 @@ export default function Navbar() {
                 className="flex items-center justify-between rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-left text-base font-medium text-emerald-300"
               >
                 <span className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4" /> Broker CRM Dashboard
+                  <KeyRound className="h-4 w-4" /> Live Broker CRM Dashboard
                 </span>
-                <span className="text-xs uppercase tracking-wider">{badge > 0 ? `${badge} new` : demoMode ? "Demo" : "Broker"}</span>
+                <span className="text-xs uppercase tracking-wider">{badge > 0 ? `${badge} new` : brokerAuthed && !demoMode ? "Broker" : "Demo"}</span>
               </button>
               )}
               <DemoToggle className="self-start px-4" />

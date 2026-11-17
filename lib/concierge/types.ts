@@ -37,12 +37,20 @@ export interface ConciergeState {
   /** Every sentence already said — guarantees no canned phrase is ever repeated verbatim. */
   said: string[];
   turns: number;
+  /** A next step has been locked in (tour, valuation, brochure…) — don't restart qualification. */
+  confirmed: Confirmed;
+  /** We've already said goodbye; further pleasantries get a short sign-off. */
+  closed: boolean;
 }
+
+export type Confirmed = null | "tour" | "valuation" | "brochure" | "listings" | "callback" | "lender";
 
 export interface ConciergeReply {
   bubbles: string[];
   propertyIds: string[];
   suggestions: string[];
+  /** This reply wraps the conversation up (used to skip the LLM for simple sign-offs). */
+  closing?: boolean;
 }
 
 export const initialState = (): ConciergeState => ({
@@ -53,6 +61,8 @@ export const initialState = (): ConciergeState => ({
   asked: {},
   said: [],
   turns: 0,
+  confirmed: null,
+  closed: false,
 });
 
 export interface ChatTurn {
