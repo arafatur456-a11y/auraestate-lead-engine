@@ -15,7 +15,7 @@ export default function Footer() {
           <div className="md:col-span-2">
             <Logo />
             <p className="mt-4 max-w-sm text-sm leading-relaxed">
-              Boutique luxury brokerage serving discerning buyers and sellers across the US and UK since 2009.
+              Boutique luxury brokerage serving discerning buyers and sellers across the US since 2009.
             </p>
           </div>
           <div>

@@ -100,9 +100,9 @@ const SEED_LEADS: Lead[] = [
     status: "Tour Requested", property: "Oceanfront Sky Residence", score: 95,
   },
   {
-    id: "seed-3", createdAt: minsAgo(185), name: "Sophie Hartley", email: "sophie.hartley@outlook.co.uk", phone: "+44 7700 900461",
-    budget: "Under $2M", location: "Kensington, London", timeline: "3–6 months", intent: "Inquiry", source: "Property Inquiry",
-    status: "New Lead", property: "Kensington Garden Apartment", score: 62,
+    id: "seed-3", createdAt: minsAgo(185), name: "Sophie Hartley", email: "sophie.hartley@outlook.com", phone: "+1 (214) 555-0147",
+    budget: "Under $2M", location: "Dallas, TX", timeline: "3–6 months", intent: "Inquiry", source: "Property Inquiry",
+    status: "New Lead", property: "Highland Park Modern Villa", score: 62,
   },
   {
     id: "seed-4", createdAt: minsAgo(60 * 9), name: "Daniel Ramirez", email: "dramirez@icloud.com", phone: "+1 (512) 555-0177",
@@ -167,7 +167,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Lead[];
-        if (Array.isArray(parsed) && parsed.length) setLeads(parsed);
+        if (Array.isArray(parsed) && parsed.length) {
+          // One-time migration: the old UK sample lead becomes its US equivalent (keeps any status the broker set).
+          const usSeed = SEED_LEADS.find((l) => l.id === "seed-3")!;
+          setLeads(parsed.map((l) => (l.id === "seed-3" && /Kensington|London/.test(l.location) ? { ...usSeed, createdAt: l.createdAt, status: l.status } : l)));
+        }
       }
     } catch {
       /* storage unavailable — keep seed data */

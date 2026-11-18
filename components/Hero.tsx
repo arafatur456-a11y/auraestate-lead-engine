@@ -66,7 +66,7 @@ export default function Hero({ filters, onChange, onSearch, resultCount }: HeroP
             Find Your Dream Property <span className="bg-gradient-to-r from-emerald-300 to-teal-200 bg-clip-text text-transparent">in Less Time.</span>
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
-            Hand-picked luxury villas, penthouses and residences across Beverly Hills, Miami, Austin, Manhattan and London —
+            Hand-picked luxury villas, penthouses and residences across Beverly Hills, Miami, Austin, Dallas and Manhattan —
             with off-market access you won&apos;t find on the portals.
           </p>
         </motion.div>
@@ -198,7 +198,7 @@ export default function Hero({ filters, onChange, onSearch, resultCount }: HeroP
               <span className="text-white/60">(380+ reviews)</span>
             </div>
             <span className="hidden items-center gap-1.5 md:flex">
-              <ShieldCheck className="h-4 w-4 text-emerald-300" /> Licensed DRE #02134567
+              <ShieldCheck className="h-4 w-4 text-emerald-300" /> Verified Boutique Brokerage
             </span>
           </div>
         </motion.div>

@@ -635,7 +635,7 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
   /* 12. Property search */
   if (criteriaChanged || s.search || s.unknownPlace || (s.buy && (P.locations || P.budgetMax) && !st.lastShown.length)) {
     if (s.unknownPlace && !patch.locations) {
-      out.push(c.pick([`We don't have public listings in ${s.unknownPlace} right now — our core markets are LA, Miami, Austin, New York and London.`, `${s.unknownPlace} isn't one of our markets yet, I'm afraid; we focus on LA, Miami, Austin, Manhattan and London.`]));
+      out.push(c.pick([`We don't have public listings in ${s.unknownPlace} right now — our core markets are LA, Miami, Austin, Dallas and New York.`, `${s.unknownPlace} isn't one of our markets yet, I'm afraid; we focus on LA, Miami, Austin, Dallas and Manhattan.`]));
       ask = { text: c.pick(["Alex does work with trusted partner brokers there — would you like an introduction?", "Would any of our markets work for you, or shall I ask Alex for a referral?"]), awaiting: null, offer: "alex" };
       return finish();
     }
@@ -762,7 +762,7 @@ export function respond(prev: ConciergeState, text: string): { reply: ConciergeR
   if (P.intent === "Buy" && (s.buy || prev.awaiting === "intent")) {
     out.push(c.pick(["Exciting! Let's find you something special.", "Lovely — I'd love to help you find the one.", "Wonderful, that's my favourite kind of search."]));
     ask = { text: c.pick(["Which city are you focused on, and roughly what budget?", "Where are you hoping to be, and is there a budget you're working within?"]), awaiting: "location" };
-    suggestions = ["Beverly Hills", "Miami Beach", "Austin", "Kensington, London"];
+    suggestions = ["Beverly Hills", "Miami Beach", "Austin", "Dallas"];
     return finish();
   }
 

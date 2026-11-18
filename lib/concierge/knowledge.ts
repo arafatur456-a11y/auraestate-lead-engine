@@ -9,8 +9,7 @@ export const BROKERAGE = {
   advisorTitle: "Senior Client Advisor",
   founded: 2009,
   office: "9454 Wilshire Blvd, Beverly Hills, CA 90212",
-  license: "DRE #02134567",
-  markets: "Los Angeles (Beverly Hills & Malibu), Miami Beach, Austin, Manhattan and London (Kensington)",
+  markets: "Los Angeles (Beverly Hills & Malibu), Miami Beach, Austin, Dallas (Highland Park) and Manhattan",
   stats: "$2.4B+ in sales, 1,200+ homes sold, 18 days average time to close, 4.9★ from 380+ reviews",
   sellerStat: "sellers average 4.2% over asking",
   offMarketShare: "about 70% of our inventory is off-market and shared privately",
@@ -40,8 +39,8 @@ export function buildKnowledgeBase(): string {
   }).join("\n\n");
 
   return `## Brokerage
-${BROKERAGE.name} — boutique luxury brokerage in the US & UK since ${BROKERAGE.founded}. Markets: ${BROKERAGE.markets}.
-Principal broker: ${AGENT.name} (${AGENT.title}), phone ${AGENT.phone}, email ${AGENT.email}. Office: ${BROKERAGE.office}. ${BROKERAGE.license}.
+${BROKERAGE.name} — boutique luxury brokerage serving buyers and sellers across the US since ${BROKERAGE.founded}. Markets: ${BROKERAGE.markets}.
+Principal broker: ${AGENT.name} (${AGENT.title}), phone ${AGENT.phone}, email ${AGENT.email}. Office: ${BROKERAGE.office}.
 Track record: ${BROKERAGE.stats}; ${BROKERAGE.sellerStat}. ${BROKERAGE.offMarketShare} — specifics are sent privately by ${AGENT.name.split(" ")[0]}.
 Fees are discussed transparently upfront by Alex; there's no cost to chat, get a valuation or tour.
 Rentals: we focus on sales, but Alex can refer luxury lease clients to a trusted partner.

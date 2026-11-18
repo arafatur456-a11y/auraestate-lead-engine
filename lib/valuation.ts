@@ -1,10 +1,10 @@
 /** Shared demo valuation model — used by the Sell Your Home section and the AI concierge. */
 /** Market bands used to produce a plausible demo valuation from the address text. */
 export const MARKETS: { match: RegExp; min: number; max: number; trend: number }[] = [
-  { match: /beverly|bel air|malibu|90210|90265/i, min: 3_800_000, max: 11_500_000, trend: 6.2 },
+  { match: /beverly hills|bel[- ]air|malibu|90210|90265/i, min: 3_800_000, max: 11_500_000, trend: 6.2 },
   { match: /manhattan|new york|tribeca|soho|nyc|brooklyn/i, min: 1_900_000, max: 6_800_000, trend: 3.9 },
   { match: /miami|palm beach|fl\b|florida/i, min: 1_200_000, max: 4_600_000, trend: 7.4 },
-  { match: /london|kensington|chelsea|mayfair|uk\b/i, min: 1_300_000, max: 4_200_000, trend: 2.8 },
+  { match: /dallas|highland park|university park|preston hollow/i, min: 900_000, max: 4_500_000, trend: 5.1 },
   { match: /austin|tx\b|texas/i, min: 650_000, max: 2_400_000, trend: 4.1 },
 ];
 const DEFAULT_MARKET = { min: 550_000, max: 1_900_000, trend: 4.8 };

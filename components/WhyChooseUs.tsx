@@ -7,7 +7,7 @@ import { AGENT } from "@/lib/data";
 import { useCRM } from "@/context/CRMContext";
 
 const FEATURES = [
-  { icon: Lock, title: "Off-market access", body: "70% of our inventory never hits Zillow or Rightmove. Get first look at pocket listings before the public." },
+  { icon: Lock, title: "Off-market access", body: "70% of our inventory never hits Zillow or Redfin. Get first look at pocket listings before the public." },
   { icon: Bot, title: "24/7 AI concierge", body: "Instant answers, tour booking and personalised matches — at 2pm or 2am, in under 60 seconds." },
   { icon: LineChart, title: "Data-driven pricing", body: "Hyper-local comps and demand analytics so you never overpay — or leave money on the table when selling." },
   { icon: BadgeCheck, title: "White-glove closing", body: "Vetted lenders, attorneys and inspectors coordinated by one dedicated agent, start to keys." },

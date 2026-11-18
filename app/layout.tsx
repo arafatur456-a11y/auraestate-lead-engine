@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AuraEstate Premier Properties — Luxury Homes & 24/7 AI Concierge",
   description:
-    "Find your dream property in less time. Curated luxury villas, penthouses and apartments in Beverly Hills, Miami, Austin, Manhattan and London.",
+    "Find your dream property in less time. Curated luxury villas, penthouses and apartments in Beverly Hills, Malibu, Miami, Austin, Dallas and Manhattan.",
   openGraph: {
     title: "AuraEstate Premier Properties",
     description: "Luxury real estate with a 24/7 AI lead concierge.",

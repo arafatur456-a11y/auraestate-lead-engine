@@ -10,9 +10,10 @@ const LOC_ALIASES: [RegExp, string[]][] = [
   [/malibu|90265/i, ["Malibu, CA"]],
   [/los angeles|\bL\.?A\.?(?=\W|$)|socal|southern california|\bcalifornia\b|\bcali\b/i, ["Beverly Hills, CA", "Malibu, CA"]],
   [/miami|south beach|florida|collins ave/i, ["Miami Beach, FL"]],
-  [/austin|texas|westlake/i, ["Austin, TX"]],
+  [/austin|westlake/i, ["Austin, TX"]],
+  [/dallas|highland park|university park|preston hollow|\bdfw\b/i, ["Dallas, TX"]],
+  [/\b(texas|tx)\b/i, ["Austin, TX", "Dallas, TX"]],
   [/manhattan|new york|\bnyc\b|tribeca/i, ["Manhattan, NY"]],
-  [/london|kensington|\bu\.?k\.?\b|england|holland park|notting hill/i, ["Kensington, London"]],
 ];
 
 /** Words that look like place names after "in"/"near" but aren't. */
@@ -31,7 +32,7 @@ const PROPERTY_KEYS: Record<string, RegExp> = {
   "mi-02": /oceanfront|sky residence|collins ave/i,
   "au-03": /lakeview|westlake|modern retreat/i,
   "ny-04": /tribeca|leonard st|loft penthouse/i,
-  "ldn-05": /kensington garden|holland park|garden apartment/i,
+  "dal-05": /highland park|modern villa/i,
   "mb-06": /cliffside|malibu villa/i,
 };
 

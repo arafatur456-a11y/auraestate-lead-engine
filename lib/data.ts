@@ -29,7 +29,7 @@ export const LOCATIONS = [
   "Miami Beach, FL",
   "Austin, TX",
   "Manhattan, NY",
-  "Kensington, London",
+  "Dallas, TX",
   "Malibu, CA",
 ] as const;
 
@@ -134,16 +134,16 @@ export const PROPERTIES: Property[] = [
     features: ["14-ft ceilings", "Private terrace", "Doorman", "Lap pool", "Fitness center", "Skyline views"],
   },
   {
-    id: "ldn-05",
-    title: "Kensington Garden Apartment",
+    id: "dal-05",
+    title: "Highland Park Modern Villa",
     price: 1_850_000,
-    location: "Kensington, London",
-    address: "Holland Park Ave, Kensington, London W11",
-    type: "Apartment",
+    location: "Dallas, TX",
+    address: "4512 Lakeside Dr, Dallas, TX 75205",
+    type: "Villa",
     beds: 2,
     baths: 2,
     sqft: 1_420,
-    yearBuilt: 1890,
+    yearBuilt: 2019,
     tag: "Off-Market",
     images: [
       u("1502672260266-1c1ef2d93688"),
@@ -152,8 +152,8 @@ export const PROPERTIES: Property[] = [
       u("1505843513577-22bb7d21e455"),
     ],
     description:
-      "An elegantly restored lateral apartment in a grand Victorian stucco-fronted building. Period cornicing, herringbone oak floors and direct access to private communal gardens — moments from Holland Park and Notting Hill.",
-    features: ["Period features", "Communal gardens", "Porter", "Lift", "Share of freehold", "Near tube"],
+      "A sleek, light-filled modern villa on a tree-lined street in coveted Highland Park. Wide-plank oak floors, a chef's kitchen with Sub-Zero and Wolf appliances, and a private courtyard garden — minutes from Highland Park Village and top-rated HPISD schools.",
+    features: ["Private courtyard", "Chef's kitchen", "Smart home", "Attached garage", "Top-rated schools", "Near Highland Park Village"],
   },
   {
     id: "mb-06",
