@@ -54,7 +54,7 @@ export default function Footer() {
                 Sign out
               </button>
             )}
-            <DemoToggle className="!px-0 !py-0 text-xs" />
+            <DemoToggle className="inline-flex !px-0 !py-0 text-xs" />
           </p>
         </div>
       </div>

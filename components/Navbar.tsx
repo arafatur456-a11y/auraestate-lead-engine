@@ -6,6 +6,7 @@ import { CalendarCheck, KeyRound, Menu, Phone, X } from "lucide-react";
 import clsx from "clsx";
 import { useCRM } from "@/context/CRMContext";
 import DemoToggle from "./DemoToggle";
+import VipButton from "./VipButton";
 import { AGENT } from "@/lib/data";
 
 const LINKS = [
@@ -41,8 +42,8 @@ export function Logo({ light = true }: { light?: boolean }) {
 }
 
 export default function Navbar() {
-  const { setCrmOpen, openChatWith, unseen, canOpenCRM, demoMode, brokerAuthed } = useCRM();
-  const badge = canOpenCRM ? unseen : 0; // visitors never see broker notifications
+  const { setCrmOpen, openChatWith, unseen, canOpenCRM, crmUnlocked, demoMode, brokerAuthed } = useCRM();
+  const badge = crmUnlocked ? unseen : 0;
   const showCrmButton = SHOW_CRM_BUTTON || canOpenCRM;
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -94,10 +95,11 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <DemoToggle className="hidden xl:inline-flex" />
+          <DemoToggle className="hidden 2xl:inline-flex" />
+          <VipButton className="hidden md:inline-flex" />
           <a
             href={AGENT.phoneHref}
-            className="hidden items-center gap-2 whitespace-nowrap text-sm font-medium text-white/80 transition hover:text-white 2xl:inline-flex"
+            className="hidden items-center gap-2 whitespace-nowrap text-sm font-medium text-white/80 transition hover:text-white min-[1760px]:inline-flex"
           >
             <Phone className="h-4 w-4" /> {AGENT.phone}
           </a>
@@ -152,7 +154,8 @@ export default function Navbar() {
                 <span className="text-xs uppercase tracking-wider">{badge > 0 ? `${badge} new` : brokerAuthed && !demoMode ? "Broker" : "Demo"}</span>
               </button>
               )}
-              <DemoToggle className="self-start px-4" />
+              <VipButton block onClick={() => setMobileOpen(false)} className="mt-1 flex md:hidden" />
+              <DemoToggle className="inline-flex self-start px-4" />
               <button
                 onClick={() => {
                   setMobileOpen(false);

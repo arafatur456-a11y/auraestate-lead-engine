@@ -11,6 +11,7 @@ import { LEAD_STATUSES, useCRM, type Lead, type LeadStatus } from "@/context/CRM
 
 const STATUS_STYLES: Record<LeadStatus, { badge: string; dot: string }> = {
   "New Lead": { badge: "bg-sky-50 text-sky-700 ring-sky-200", dot: "bg-sky-500" },
+  "Registered VIP Buyer": { badge: "bg-yellow-50 text-yellow-800 ring-yellow-400", dot: "bg-yellow-400" },
   "New Seller Lead": { badge: "bg-orange-50 text-orange-700 ring-orange-200", dot: "bg-orange-500" },
   Qualified: { badge: "bg-emerald-50 text-emerald-700 ring-emerald-200", dot: "bg-emerald-500" },
   "Tour Requested": { badge: "bg-violet-50 text-violet-700 ring-violet-200", dot: "bg-violet-500" },

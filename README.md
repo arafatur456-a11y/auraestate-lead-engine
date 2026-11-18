@@ -34,22 +34,21 @@ The chat widget is **Elena, Senior Client Advisor**. She answers questions about
 
 Code: `lib/concierge/` (`extract.ts` works out intent and details, `engine.ts` writes the built-in replies, `knowledge.ts` holds the listing data and the AI instructions, `score.ts` scores leads and maps them to the CRM) and `app/api/chat/route.ts`.
 
-## Demo Mode & broker access
+## Broker CRM, Demo Mode & VIP accounts
 
-By default the site is in **production mode**. Visitors see a clean experience: no CRM button, lead scores, broker pop-ups or broker-pitch section, and Elena's confirmation card only says "Details sent to Alex".
+**Broker CRM:** the **Live Broker CRM · DEMO** button in the navbar opens the full dashboard instantly, with no PIN, so you can show live leads during a pitch.
+- To lock it on a client's live site, set `NEXT_PUBLIC_REQUIRE_BROKER_PIN=true` and `BROKER_PIN`. The PIN is checked on the server, a correct one keeps the browser signed in for 8 hours, and there's a limit of 5 attempts per 5 minutes.
+- `NEXT_PUBLIC_SHOW_CRM_BUTTON=false` hides the button entirely.
 
-| | Production mode (default) | Demo Mode |
-|---|---|---|
-| Turn on | — | `?demo=true` in the URL, or the **Demo Mode** switch (visible only to a signed-in broker) |
+**Demo Mode** (`?demo=true`, or the switch shown to signed-in brokers and in Demo Mode) adds the broker-facing extras: the lead score and "View in CRM" button in Elena's chat, new-lead pop-ups, the CRM link under the home valuation, and the broker-pitch section. Visitors don't see these by default. `?demo=false` turns it off; `NEXT_PUBLIC_ALLOW_DEMO_MODE=false` disables it.
 
-The **Live Broker CRM · DEMO** button is always in the navbar so it's easy to find during a pitch. Set `NEXT_PUBLIC_SHOW_CRM_BUTTON=false` to hide it on a client's live site.
-| Broker CRM | **Live Broker CRM** navbar button → asks for the broker PIN | One click from the navbar, chat or valuation |
-| Lead score / "View in CRM" in chat | Hidden | Shown |
-| New-lead pop-ups and navbar badge | Signed-in broker only | Shown |
+**VIP buyer accounts:** the **VIP Access** button (navbar, mobile menu, and the banner under the listings) opens a registration form: full name, email, phone, preferred location, budget range and password.
+- Registering signs the buyer in straight away and shows a welcome screen with their matches. **Browse my matches** filters the listings to their brief.
+- Returning buyers use the **Sign in** tab.
+- Each registration appears in the CRM as a **Registered VIP Buyer** lead. If that email is already in the CRM (for example from Elena), the existing lead is upgraded instead of duplicated.
+- Accounts are a front-end demo: they're stored in the browser's `localStorage` and passwords are saved as salted SHA-256 hashes. For real client accounts, move sign-up to a server (for example NextAuth, Clerk or Supabase Auth).
 
-- **Set `BROKER_PIN`** in Vercel (**Settings → Environment Variables**). The PIN is checked on the server and never sent to the browser. After a correct PIN, the browser stays signed in for 8 hours (httpOnly signed cookie), and there's a limit of 5 attempts per 5 minutes. In production, if no PIN is set, broker login is disabled.
-- Demo Mode is remembered in the browser; `?demo=false` turns it off. On a client's live site, set `NEXT_PUBLIC_ALLOW_DEMO_MODE=false` so Demo Mode can't be turned on at all. For a sales-demo deployment, `NEXT_PUBLIC_DEMO_MODE=true` starts every visit in Demo Mode.
-- **Important:** leads are still stored in each browser (`localStorage`), so the CRM only shows leads captured in that same browser. The PIN controls who can open the CRM screen; it doesn't protect stored data. Before using this with real clients, connect `addLead` to a database or a CRM such as Follow Up Boss or HubSpot.
+**Important:** leads and accounts live in each browser's `localStorage`, so the CRM only shows activity from that same browser. Before using this with real clients, connect `addLead` to a database or a CRM such as Follow Up Boss or HubSpot.
 
 ## Demo script (for broker presentations)
 

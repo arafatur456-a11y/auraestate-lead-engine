@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CRMProvider } from "@/context/CRMContext";
+import { VipProvider } from "@/context/VipContext";
+import VipRegister from "@/components/VipRegister";
+import VipBanner from "@/components/VipBanner";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Listings from "@/components/Listings";
@@ -33,8 +36,20 @@ export default function HomePage() {
     return () => window.removeEventListener("aura:open-property", open);
   }, []);
 
+  // "Browse my matches" from the VIP welcome screen applies the member's location & budget.
+  useEffect(() => {
+    const apply = (e: Event) => {
+      const d = (e as CustomEvent<{ location: string; maxPrice: number }>).detail;
+      setFilters({ ...DEFAULT_FILTERS, location: d.location, maxPrice: d.maxPrice });
+      setTimeout(() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" }), 250);
+    };
+    window.addEventListener("aura:apply-filters", apply);
+    return () => window.removeEventListener("aura:apply-filters", apply);
+  }, []);
+
   return (
     <CRMProvider>
+      <VipProvider>
       <Navbar />
       <main>
         <Hero
@@ -44,6 +59,7 @@ export default function HomePage() {
           onSearch={() => document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" })}
         />
         <Listings properties={results} filtered={isFiltered(filters)} onReset={() => setFilters(DEFAULT_FILTERS)} onView={setSelected} />
+        <VipBanner />
         <MortgageCalculator />
         <SellerValuation />
         <WhyChooseUs />
@@ -56,6 +72,8 @@ export default function HomePage() {
       <MobileFAB />
       <LeadToast />
       <BrokerLogin />
+      <VipRegister />
+      </VipProvider>
     </CRMProvider>
   );
 }

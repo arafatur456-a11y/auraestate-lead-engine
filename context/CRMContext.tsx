@@ -2,11 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-export type LeadStatus = "New Lead" | "New Seller Lead" | "Qualified" | "Tour Requested" | "Contacted" | "Closed";
+export type LeadStatus = "New Lead" | "Registered VIP Buyer" | "New Seller Lead" | "Qualified" | "Tour Requested" | "Contacted" | "Closed";
 export type LeadIntent = "Buy" | "Sell" | "Tour" | "Inquiry";
-export type LeadSource = "AI Chatbot" | "Property Inquiry" | "Tour Request" | "Home Valuation";
+export type LeadSource = "AI Chatbot" | "Property Inquiry" | "Tour Request" | "Home Valuation" | "VIP Registration";
 
-export const LEAD_STATUSES: LeadStatus[] = ["New Lead", "New Seller Lead", "Qualified", "Tour Requested", "Contacted", "Closed"];
+export const LEAD_STATUSES: LeadStatus[] = ["New Lead", "Registered VIP Buyer", "New Seller Lead", "Qualified", "Tour Requested", "Contacted", "Closed"];
 
 export interface Lead {
   id: string;
@@ -52,6 +52,8 @@ interface CRMContextValue {
   brokerAuthed: boolean;
   /** True when CRM features (button, lead score, toasts) should be visible. */
   canOpenCRM: boolean;
+  /** True when the CRM opens without a PIN (the default; see NEXT_PUBLIC_REQUIRE_BROKER_PIN). */
+  crmUnlocked: boolean;
   loginOpen: boolean;
   closeLogin: () => void;
   completeLogin: () => void;
@@ -62,6 +64,8 @@ interface CRMContextValue {
 export const DEMO_ALLOWED = process.env.NEXT_PUBLIC_ALLOW_DEMO_MODE !== "false";
 /** Set NEXT_PUBLIC_DEMO_MODE=true to start every visit in Demo Mode (e.g. a sales-demo deployment). */
 const DEMO_DEFAULT = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+/** The CRM opens instantly by default. Set NEXT_PUBLIC_REQUIRE_BROKER_PIN=true to require the broker PIN outside Demo Mode. */
+const REQUIRE_PIN = process.env.NEXT_PUBLIC_REQUIRE_BROKER_PIN === "true";
 const DEMO_KEY = "auraestate.demoMode";
 
 const CRMContext = createContext<CRMContextValue | null>(null);
@@ -217,7 +221,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
   const setCrmOpen = useCallback(
     (open: boolean) => {
-      if (open && !canOpenCRM) {
+      if (open && REQUIRE_PIN && !canOpenCRM) {
         // Production mode: ask for the broker PIN first, then open.
         pending.current = { crm: true };
         setLoginOpen(true);
@@ -291,6 +295,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       setDemoMode,
       brokerAuthed,
       canOpenCRM,
+      crmUnlocked: !REQUIRE_PIN || canOpenCRM,
       loginOpen,
       closeLogin: () => {
         pending.current = {};

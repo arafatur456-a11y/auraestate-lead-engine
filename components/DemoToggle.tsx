@@ -19,7 +19,9 @@ export default function DemoToggle({ className, tone = "dark" }: { className?: s
       onClick={() => setDemoMode(!demoMode)}
       title={demoMode ? "Demo Mode is on — CRM tools are visible to anyone using this browser" : "Turn on Demo Mode for presentations"}
       className={clsx(
-        "inline-flex items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition",
+        // Display comes from the caller (e.g. "hidden 2xl:inline-flex") so responsive hiding actually works.
+        /\b(hidden|flex|inline-flex|block)\b/.test(className ?? "") ? "" : "inline-flex",
+        "items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-1.5 text-xs font-medium transition",
         tone === "dark" ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900",
         className,
       )}
