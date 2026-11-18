@@ -46,9 +46,9 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row sm:justify-between">
-          <p>© {new Date().getFullYear()} AuraEstate Premier Properties. Demo template — all listings and data are fictional.</p>
+          <p>© 2026 AuraEstate Premier Properties. All rights reserved.</p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            Equal Housing Opportunity · DRE #02134567
+            <span>Designed &amp; Engineered by Arafat Rahman</span>
             {brokerAuthed && (
               <button onClick={logout} className="text-white/40 transition hover:text-white/80">
                 Sign out
